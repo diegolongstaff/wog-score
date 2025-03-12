@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WOG Score</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" href="img/icons/favicon.png" type="image/png">
+    
+    <!-- Estilos CSS -->
+    <link href="css/main.css" rel="stylesheet">
+    <link href="css/components.css" rel="stylesheet">
+    <link href="css/responsive.css" rel="stylesheet">
+    
+    <!-- Font Awesome para iconos -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+</head>
+<body>
+    <header>
+        <h1>WOG Score</h1>
+        <div id="user-info">
+            <!-- Información del usuario logueado (si se implementa autenticación) -->
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Navegación por pestañas -->
+        <div class="tabs">
+            <button class="tab-button active" data-tab="nuevo-wog">Nuevo WOG</button>
+            <button class="tab-button" data-tab="puntajes">Puntajes</button>
+            <button class="tab-button" data-tab="historial">Historial</button>
+            <button class="tab-button" data-tab="configuracion">Configuración</button>
+        </div>
+
+        <!-- Contenido de las pestañas -->
+        <div id="nuevo-wog" class="tab-content active">
+            <div class="card">
+                <h2>Registrar Nuevo WOG</h2>
+                <form id="wog-form">
+                    <div class="form-group">
+                        <label for="fecha">Fecha</label>
+                        <input type="date" id="fecha" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="sede">Sede</label>
+                        <select id="sede" required>
+                            <option value="">Seleccionar anfitrión</option>
+                            <!-- Opciones generadas dinámicamente -->
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="subsede">Subsede</label>
+                        <input type="text" id="subsede" placeholder="Ej: Casa, Club, CNSI...">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="compras">Compras</label>
+                        <select id="compras" required>
+                            <option value="">Seleccionar responsable</option>
+                            <option value="compartido">Compartido</option>
+                            <!-- Opciones generadas dinámicamente -->
+                        </select>
+                    </div>
+                    
+                    <div id="compras-compartidas-container" style="display: none;">
+                        <label>Selecciona quienes compartieron las compras</label>
+                        <div class="checkbox-group" id="compras-compartidas-checkboxes">
+                            <!-- Checkboxes generados dinámicamente -->
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Asador</label>
+                        <div id="asador-container">
+                            <div class="asador-item">
+                                <select class="asador-select" required>
+                                    <option value="">Seleccionar asador</option>
+                                    <!-- Opciones generadas dinámicamente -->
+                                </select>
+                            </div>
+                        </div>
+                        <button type="button" id="agregar-asador" class="btn-add">
+                            <i class="fas fa-plus"></i> Agregar Asador
+                        </button>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Asistentes</label>
+                        <div class="checkbox-group" id="asistentes-container">
+                            <!-- Checkboxes generados dinámicamente -->
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-primary">Guardar WOG</button>
+                </form>
+            </div>
+        </div>
+
+        <div id="puntajes" class="tab-content">
+            <div class="card">
+                <h2>Tabla de Puntuación</h2>
+                <div class="leaderboard" id="leaderboard-container">
+                    <!-- Tarjetas de jugadores generadas dinámicamente -->
+                    <div class="loading-indicator">
+                        <i class="fas fa-spinner fa-spin"></i> Cargando puntajes...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="historial" class="tab-content">
+            <div class="card">
+                <h2>Historial de WOGs</h2>
+                <div class="history-table">
+                    <table id="historial-table">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Sede</th>
+                                <th>Subsede</th>
+                                <th>Compras</th>
+                                <th>Asador</th>
+                                <th>Asistentes</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historial-body">
+                            <!-- Filas generadas dinámicamente -->
+                        </tbody>
+                    </table>
+                    <div class="loading-indicator">
+                        <i class="fas fa-spinner fa-spin"></i> Cargando historial...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="configuracion" class="tab-content">
+            <div class="card">
+                <h2>Administrar Participantes</h2>
+                <div id="participantes-list">
+                    <!-- Lista de participantes generada dinámicamente -->
+                </div>
+                <button type="button" class="btn-add" id="btn-nuevo-participante">
+                    <i class="fas fa-user-plus"></i> Agregar Participante
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para agregar nuevo participante -->
+    <div id="modal-nuevo-participante" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Nuevo Participante</h2>
+            <form id="form-nuevo-participante">
+                <div class="form-group">
+                    <label for="nuevo-nombre">Nombre</label>
+                    <input type="text" id="nuevo-nombre" placeholder="Nombre del participante" required>
+                </div>
+                <div class="form-group">
+                    <label for="nuevo-apodo">Apodo (opcional)</label>
+                    <input type="text" id="nuevo-apodo" placeholder="Apodo o alias">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" id="btn-cancelar-participante">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal confirmación editar/eliminar -->
+    <div id="modal-confirmacion" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2 id="modal-confirmacion-titulo">Confirmar Acción</h2>
+            <p id="modal-confirmacion-mensaje"></p>
+            <div class="form-actions">
+                <button type="button" class="btn-cancel" id="btn-cancelar-confirmacion">Cancelar</button>
+                <button type="button" class="btn-danger" id="btn-confirmar-accion">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts JS -->
+    <!-- Primero cargamos la configuración de Firebase -->
+    <script src="firebase-config.js"></script>
+    
+    <!-- Luego cargamos los módulos principales -->
+    <script src="js/database.js" type="module"></script>
+    <script src="js/auth.js" type="module"></script>
+    <script src="js/app.js" type="module"></script>
+    
+    <!-- Cargamos los módulos específicos -->
+    <script src="js/modules/wog-form.js" type="module"></script>
+    <script src="js/modules/leaderboard.js" type="module"></script>
+    <script src="js/modules/history.js" type="module"></script>
+    <script src="js/modules/settings.js" type="module"></script>
+</body>
+</html>

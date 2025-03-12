@@ -1,0 +1,219 @@
+/* components.css - Estilos para componentes específicos */
+
+/* Tarjetas de jugador en el leaderboard */
+.leaderboard {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+}
+
+.player-card {
+    background-color: var(--card-bg);
+    border-radius: 10px;
+    padding: 15px;
+    width: 300px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s;
+    position: relative;
+    overflow: hidden;
+}
+
+.player-card:hover {
+    transform: translateY(-5px);
+}
+
+.player-card h3 {
+    margin-top: 0;
+    color: var(--primary-color);
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+}
+
+.player-stats {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+
+.stat-item {
+    text-align: center;
+    width: 30%;
+    margin-bottom: 10px;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    color: #666;
+}
+
+.ranking {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: var(--highlight-color);
+    color: var(--text-color);
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+.player-badge {
+    background-color: #f0f0f0;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    margin-right: 5px;
+    margin-bottom: 5px;
+    display: inline-block;
+}
+
+.badge-section {
+    margin-top: 15px;
+}
+
+/* Formulario de asador con múltiples selectores */
+.asador-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.asador-item .asador-select {
+    flex-grow: 1;
+}
+
+.asador-item button {
+    margin-left: 10px;
+}
+
+/* Mensajes de error */
+.error-message {
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 10px 15px;
+    margin-bottom: 15px;
+    border: 1px solid #f5c6cb;
+    border-radius: 5px;
+    position: relative;
+}
+
+.error-message button {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: transparent;
+    border: none;
+    color: #721c24;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+/* Tooltips */
+.tooltip {
+    position: relative;
+    display: inline-block;
+    cursor: help;
+}
+
+.tooltip .tooltip-text {
+    visibility: hidden;
+    width: 200px;
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%;
+    left: 50%;
+    margin-left: -100px;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.tooltip:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Indicadores especiales */
+.badge {
+    display: inline-block;
+    padding: 0.25em 0.6em;
+    font-size: 75%;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 10px;
+}
+
+.badge-primary {
+    color: #fff;
+    background-color: var(--primary-color);
+}
+
+.badge-secondary {
+    color: #fff;
+    background-color: var(--secondary-color);
+}
+
+.badge-success {
+    color: #fff;
+    background-color: var(--success-color);
+}
+
+.badge-danger {
+    color: #fff;
+    background-color: var(--danger-color);
+}
+
+.badge-warning {
+    color: #212529;
+    background-color: var(--warning-color);
+}
+
+.badge-info {
+    color: #fff;
+    background-color: var(--info-color);
+}
+
+/* Avatar de usuario (para futura implementación) */
+.avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: var(--primary-color);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin-right: 10px;
+}
+
+.avatar-lg {
+    width: 60px;
+    height: 60px;
+    font-size: 1.2rem;
+}
+
+.avatar-sm {
+    width: 30px;
+    height: 30px;
+    font-size: 0.8rem;
+}
