@@ -361,4 +361,44 @@ export async function calcularPuntajes() {
     console.error('Error al calcular puntajes:', error);
     throw error;
   }
+/**
+ * Elimina un participante de la base de datos
+ * @param {string} id ID del participante a eliminar
+ * @returns {Promise<void>}
+ */
+export async function deleteParticipante(id) {
+  try {
+    // Antes de eliminar, verificar si el participante está asociado a eventos
+    const eventosSnapshot = await db.collection(EVENTOS_COLLECTION)
+      .where('asistentes', 'array-contains', id)
+      .limit(1)
+      .get();
+      
+    const eventosSedeSnapshot = await db.collection(EVENTOS_COLLECTION)
+      .where('sede', '==', id)
+      .limit(1)
+      .get();
+      
+    const eventosAsadorSnapshot = await db.collection(EVENTOS_COLLECTION)
+      .where('asadores', 'array-contains', id)
+      .limit(1)
+      .get();
+      
+    const eventosComprasSnapshot = await db.collection(EVENTOS_COLLECTION)
+      .where('compras', '==', id)
+      .limit(1)
+      .get();
+      
+    // Si está asociado a eventos, no permitir eliminación
+    if (!eventosSnapshot.empty || !eventosSedeSnapshot.empty || 
+        !eventosAsadorSnapshot.empty || !eventosComprasSnapshot.empty) {
+      throw new Error('No se puede eliminar el participante porque está asociado a uno o más eventos. Considere desactivarlo en lugar de eliminarlo.');
+    }
+    
+    // Si no está asociado a eventos, proceder con la eliminación
+    await db.collection(PARTICIPANTES_COLLECTION).doc(id).delete();
+  } catch (error) {
+    console.error('Error al eliminar participante:', error);
+    throw error;
+  }
 }
