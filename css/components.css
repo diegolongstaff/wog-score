@@ -217,3 +217,25 @@
     height: 30px;
     font-size: 0.8rem;
 }
+/* Botones de acción en tablas */
+.btn-action {
+  padding: 5px 10px;
+  margin-right: 2px;
+  border-radius: 3px;
+}
+
+.btn-action-danger {
+  background-color: var(--danger-color);
+  color: white;
+}
+
+.btn-action-danger:hover {
+  background-color: var(--danger-dark);
+}
+
+/* Mensajes de advertencia para eliminación */
+.warning-message {
+  color: var(--danger-color);
+  font-weight: bold;
+  margin-top: 10px;
+}
