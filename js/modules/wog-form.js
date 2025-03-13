@@ -43,8 +43,11 @@ function initWogForm() {
  */
 async function setupWogForm() {
   try {
+    console.log('Configurando formulario de WOG...');
+    
     // Obtener participantes activos
     const participantes = await getParticipantesActivos();
+    console.log('Participantes activos obtenidos:', participantes);
     
     // Llenar los selectores con los participantes
     populateSelectWithParticipantes(sedeSelect, participantes);
@@ -52,6 +55,7 @@ async function setupWogForm() {
     populateAsadorSelectors(participantes);
     populateAsistentesCheckboxes(participantes);
     
+    console.log('Formulario configurado correctamente');
   } catch (error) {
     console.error('Error al configurar formulario:', error);
     showErrorMessage('Error al cargar participantes. Por favor, recarga la página.');
