@@ -52,9 +52,10 @@ function initHistorialModule() {
 }
 
 // Cargar historial de WOGs
+// Función simplificada para cargar el historial
 async function cargarHistorial() {
     try {
-        console.log('Iniciando carga de historial...');
+        console.log('Iniciando carga de historial (versión simplificada)...');
         
         // Mostrar loader
         historialContainer.innerHTML = `
@@ -63,25 +64,15 @@ async function cargarHistorial() {
             </div>
         `;
         
-        // Verificar que la colección existe y es accesible
-        const testSnapshot = await db.collection(COLECCION_WOGS).get();
-        console.log('Acceso a colección WOGs exitoso:', testSnapshot.size, 'documentos encontrados');
+        // Obtener WOGs directamente sin ningún filtro
+        const snapshot = await db.collection('wogs').get();
         
-        // Cargar cache de participantes
-        await cargarParticipantesCache();
-        
-        // Verificar que participantesCache se está llenando correctamente
-        console.log('Estado actual de participantesCache:', Object.keys(participantesCache).length);
-        
-        // Obtener WOGs de Firestore
-        const snapshot = await db.collection(COLECCION_WOGS)
-            .orderBy('fecha', 'desc')
-            .get();
-        
-        console.log(`Se obtuvieron ${snapshot.docs.length} WOGs del historial`);
+        console.log('Resultado de Firestore:', snapshot);
+        console.log('Número de documentos encontrados:', snapshot.size);
         
         // Verificar si hay WOGs
         if (snapshot.empty) {
+            console.log('No hay WOGs en Firestore');
             historialContainer.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-calendar-alt"></i>
@@ -90,6 +81,49 @@ async function cargarHistorial() {
             `;
             return;
         }
+        
+        // Limpiar contenedor y mostrar WOGs de manera simple
+        historialContainer.innerHTML = '';
+        
+        snapshot.docs.forEach(doc => {
+            const wog = doc.data();
+            console.log('Procesando WOG:', doc.id, wog);
+            
+            const fecha = wog.fecha ? wog.fecha.toDate() : new Date();
+            
+            const wogElement = document.createElement('div');
+            wogElement.className = 'historial-item';
+            
+            // HTML simplificado para probar visualización
+            wogElement.innerHTML = `
+                <div class="historial-header">
+                    <div class="historial-fecha">
+                        ${fecha.toLocaleDateString('es-ES')}
+                    </div>
+                </div>
+                <div class="historial-detalles">
+                    <p><strong>ID:</strong> ${doc.id}</p>
+                    <p><strong>Sede:</strong> ${wog.sede || 'No especificada'}</p>
+                    <p><strong>Subsede:</strong> ${wog.subsede || '-'}</p>
+                </div>
+            `;
+            
+            historialContainer.appendChild(wogElement);
+        });
+        
+        console.log('Historial renderizado con', historialContainer.children.length, 'elementos');
+        
+    } catch (error) {
+        console.error('Error al cargar historial:', error);
+        console.error('Stack trace:', error.stack);
+        historialContainer.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>Error al cargar historial: ${error.message}</p>
+            </div>
+        `;
+    }
+}
         
         // Preparar array de WOGs
         const wogs = snapshot.docs.map(doc => ({
