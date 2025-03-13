@@ -102,7 +102,11 @@ async function cargarDashboard() {
     try {
         // Obtener conteo de WOGs
         const wogsSnapshot = await db.collection(COLECCION_WOGS).get();
-        document.getElementById('total-wogs').textContent = wogsSnapshot.size;
+        document.getElementById('total-wogs').innerHTML = `
+    <a href="#" onclick="openTab('tab-historial'); return false;" class="dashboard-link">
+        ${wogsSnapshot.size}
+    </a>
+`;
         
         // Obtener conteo de participantes
         const participantesSnapshot = await db.collection(COLECCION_PARTICIPANTES).get();
@@ -127,7 +131,12 @@ async function cargarDashboard() {
             }
             
             if (lider) {
-                document.getElementById('current-leader').textContent = lider;
+                if (lider) {
+    document.getElementById('current-leader').innerHTML = `
+        <a href="#" onclick="openTab('tab-ranking'); return false;" class="dashboard-link">
+            ${lider}
+        </a>
+    `;
             }
         }
         
