@@ -65,7 +65,31 @@ function openTab(tabId) {
   const event = new CustomEvent('tabChanged', { detail: { tabId } });
   document.dispatchEvent(event);
 }
+// Exportar función openTab globalmente
+window.openTab = openTab;
 
+// Función openTab
+function openTab(tabId) {
+  // Ocultar todas las pestañas
+  document.querySelectorAll('.tab-content').forEach(tab => {
+    tab.classList.remove('active');
+  });
+  
+  // Desactivar todos los botones
+  document.querySelectorAll('.tab-button').forEach(button => {
+    button.classList.remove('active');
+  });
+  
+  // Mostrar la pestaña seleccionada
+  document.getElementById(tabId).classList.add('active');
+  
+  // Activar el botón correspondiente
+  document.querySelector(`.tab-button[onclick="window.openTab('${tabId}')"]`).classList.add('active');
+  
+  // Disparar evento de cambio de pestaña
+  const event = new CustomEvent('tabChanged', { detail: { tabId } });
+  document.dispatchEvent(event);
+}
 /**
  * Carga los datos iniciales de la aplicación
  */
