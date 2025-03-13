@@ -6,6 +6,7 @@ const modalConfirmacion = document.getElementById('modal-confirmacion');
 const modalConfirmacionTitulo = document.getElementById('modal-confirmacion-titulo');
 const modalConfirmacionMensaje = document.getElementById('modal-confirmacion-mensaje');
 const btnConfirmarAccion = document.getElementById('btn-confirmar-accion');
+const btnCancelarConfirmacion = document.getElementById('btn-cancelar-confirmacion');
 
 // Variable para almacenar el ID del WOG a eliminar
 let wogAEliminar = null;
@@ -15,6 +16,9 @@ let participantesCache = {};
 
 // Inicializar módulo
 function initHistorialModule() {
+    // Cargar historial inmediatamente (no esperar al cambio de pestaña)
+    cargarHistorial();
+    
     // Escuchar eventos de cambio de pestaña
     document.addEventListener('tabChanged', ({ detail }) => {
         if (detail.tabId === 'tab-historial') {
@@ -25,11 +29,20 @@ function initHistorialModule() {
     // Escuchar eventos de actualización
     document.addEventListener('wogActualizado', cargarHistorial);
     document.addEventListener('participantesActualizados', cargarHistorial);
+    
+    // Configurar botón de cancelar confirmación
+    btnCancelarConfirmacion.addEventListener('click', () => {
+        modalConfirmacion.style.display = 'none';
+    });
+    
+    console.log('Módulo de historial inicializado correctamente');
 }
 
 // Cargar historial de WOGs
 async function cargarHistorial() {
     try {
+        console.log('Cargando historial...');
+        
         // Mostrar loader
         historialContainer.innerHTML = `
             <div class="loader">
@@ -37,15 +50,15 @@ async function cargarHistorial() {
             </div>
         `;
         
-        // Cargar cache de participantes si está vacío
-        if (Object.keys(participantesCache).length === 0) {
-            await cargarParticipantesCache();
-        }
+        // Cargar cache de participantes
+        await cargarParticipantesCache();
         
         // Obtener WOGs de Firestore
         const snapshot = await db.collection(COLECCION_WOGS)
             .orderBy('fecha', 'desc')
             .get();
+        
+        console.log(`Se obtuvieron ${snapshot.docs.length} WOGs del historial`);
         
         // Verificar si hay WOGs
         if (snapshot.empty) {
@@ -73,15 +86,15 @@ async function cargarHistorial() {
             wogElement.className = 'historial-item';
             
             // Convertir fecha
-            const fecha = wog.fecha.toDate();
+            const fecha = wog.fecha ? (wog.fecha.toDate ? wog.fecha.toDate() : new Date(wog.fecha)) : new Date();
             
             // Obtener nombre de sede
             const sedeNombre = participantesCache[wog.sede]?.nombre || 'Desconocido';
             
             // Obtener nombres de asadores
-            const asadoresNombres = wog.asadores
+            const asadoresNombres = Array.isArray(wog.asadores) ? wog.asadores
                 .map(id => participantesCache[id]?.nombre || 'Desconocido')
-                .join(' / ');
+                .join(' / ') : 'No disponible';
             
             // Obtener nombre de compras
             let comprasNombres = '';
@@ -91,6 +104,8 @@ async function cargarHistorial() {
                     .join(' / ');
             } else if (wog.compras) {
                 comprasNombres = participantesCache[wog.compras]?.nombre || 'Desconocido';
+            } else {
+                comprasNombres = 'No disponible';
             }
             
             // HTML del elemento
@@ -129,7 +144,7 @@ async function cargarHistorial() {
                 <div class="historial-asistentes">
                     <div class="historial-label">Asistentes</div>
                     <div class="asistentes-list">
-                        ${wog.asistentes.map(id => {
+                        ${wog.asistentes && Array.isArray(wog.asistentes) ? wog.asistentes.map(id => {
                             const participante = participantesCache[id];
                             return participante ? `
                                 <div class="asistente-tag">
@@ -139,7 +154,7 @@ async function cargarHistorial() {
                                     ${participante.nombre}
                                 </div>
                             ` : '';
-                        }).join('')}
+                        }).join('') : 'No disponible'}
                     </div>
                 </div>
             `;
@@ -152,7 +167,7 @@ async function cargarHistorial() {
         historialContainer.innerHTML = `
             <div class="empty-state">
                 <i class="fas fa-exclamation-triangle"></i>
-                <p>Error al cargar historial</p>
+                <p>Error al cargar historial: ${error.message}</p>
             </div>
         `;
     }
@@ -274,7 +289,7 @@ async function eliminarWog() {
         
     } catch (error) {
         console.error('Error al eliminar WOG:', error);
-        mostrarToast('Error al eliminar WOG', true);
+        mostrarToast('Error al eliminar WOG: ' + error.message, true);
     } finally {
         // Restaurar botón
         btnConfirmarAccion.disabled = false;
@@ -288,6 +303,7 @@ async function eliminarWog() {
 // Cargar información de participantes en cache
 async function cargarParticipantesCache() {
     try {
+        console.log('Cargando cache de participantes...');
         const snapshot = await db.collection(COLECCION_PARTICIPANTES).get();
         
         participantesCache = {};
@@ -297,8 +313,10 @@ async function cargarParticipantesCache() {
                 ...doc.data()
             };
         });
+        console.log(`Cache de participantes cargado con ${snapshot.docs.length} participantes`);
     } catch (error) {
         console.error('Error al cargar cache de participantes:', error);
+        throw error; // Relanzar para que se maneje en la función que llama
     }
 }
 
