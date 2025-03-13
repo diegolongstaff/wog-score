@@ -1,11 +1,13 @@
 // Configuración de Firebase
 const firebaseConfig = {
-  apiKey: "TU_API_KEY", // Reemplazar con tus datos
+apiKey: "AIzaSyAfpElcUa7MhOmdb6n2R4sw2CVv3usvHKk",
   authDomain: "wog-score.firebaseapp.com",
   projectId: "wog-score",
-  storageBucket: "wog-score.appspot.com",
-  messagingSenderId: "TU_MESSAGING_SENDER_ID",
-  appId: "TU_APP_ID"
+  storageBucket: "wog-score.firebasestorage.app",
+  messagingSenderId: "44020602488",
+  appId: "1:44020602488:web:90e29d117bfc74e164ff8d",
+  measurementId: "G-GRZX39NEEZ"
+
 };
 
 // Inicializar Firebase
