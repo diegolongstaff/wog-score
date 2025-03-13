@@ -182,8 +182,11 @@ export async function deleteEvento(id) {
  */
 export async function initializeDatabase() {
   try {
+    console.log('Iniciando verificación de base de datos...');
     // Verificar si ya existen participantes
     const participantesSnapshot = await db.collection(PARTICIPANTES_COLLECTION).limit(1).get();
+    
+    console.log('Resultado de verificación:', participantesSnapshot.empty ? 'Base de datos vacía' : 'Base de datos con datos');
     
     if (participantesSnapshot.empty) {
       console.log('Inicializando base de datos con datos de muestra...');
