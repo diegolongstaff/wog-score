@@ -288,7 +288,7 @@ async function comprimirImagen(file, maxWidth = 800, quality = 0.7) {
 }
 
 // Función para mostrar las notas de un WOG
-function mostrarNotasWog(fecha, notas) {
+function mostrarNotasWogDirecto(fecha, notas) {
     const modalNotas = document.getElementById('modal-notas');
     const tituloNotas = document.getElementById('modal-notas-titulo');
     const contenidoNotas = document.getElementById('modal-notas-contenido');
@@ -313,4 +313,4 @@ window.mostrarToast = mostrarToast;
 window.formatearFecha = formatearFecha;
 window.obtenerIniciales = obtenerIniciales;
 window.comprimirImagen = comprimirImagen;
-window.mostrarNotasWog = mostrarNotasWog;
+window.mostrarNotasWogDirecto = mostrarNotasWogDirecto;

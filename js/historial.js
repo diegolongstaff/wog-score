@@ -7,6 +7,10 @@ const modalConfirmacionTitulo = document.getElementById('modal-confirmacion-titu
 const modalConfirmacionMensaje = document.getElementById('modal-confirmacion-mensaje');
 const btnConfirmarAccion = document.getElementById('btn-confirmar-accion');
 const btnCancelarConfirmacion = document.getElementById('btn-cancelar-confirmacion');
+const modalNotas = document.getElementById('modal-notas');
+const modalNotasTitulo = document.getElementById('modal-notas-titulo');
+const modalNotasContenido = document.getElementById('modal-notas-contenido');
+const btnCerrarNotas = document.getElementById('btn-cerrar-notas');
 
 // Variable para almacenar el ID del WOG a eliminar
 let wogAEliminar = null;
@@ -37,13 +41,20 @@ function initHistorialModule() {
         modalConfirmacion.style.display = 'none';
     });
     
+    // Configurar botón de cerrar notas
+    if (btnCerrarNotas) {
+        btnCerrarNotas.addEventListener('click', () => {
+            modalNotas.style.display = 'none';
+        });
+    }
+    
     console.log('Módulo de historial inicializado correctamente');
 }
 
 // Cargar historial de WOGs
 async function cargarHistorial() {
     try {
-        console.log('Cargando historial...');
+        console.log('Iniciando carga de historial...');
         
         // Mostrar loader
         historialContainer.innerHTML = `
@@ -52,8 +63,15 @@ async function cargarHistorial() {
             </div>
         `;
         
+        // Verificar que la colección existe y es accesible
+        const testSnapshot = await db.collection(COLECCION_WOGS).get();
+        console.log('Acceso a colección WOGs exitoso:', testSnapshot.size, 'documentos encontrados');
+        
         // Cargar cache de participantes
         await cargarParticipantesCache();
+        
+        // Verificar que participantesCache se está llenando correctamente
+        console.log('Estado actual de participantesCache:', Object.keys(participantesCache).length);
         
         // Obtener WOGs de Firestore
         const snapshot = await db.collection(COLECCION_WOGS)
@@ -122,7 +140,7 @@ async function cargarHistorial() {
                     </div>
                     <div class="historial-acciones">
                         ${tieneNotas ? `
-                            <button class="historial-accion notas" onclick="mostrarNotasWog(${JSON.stringify(fecha)}, '${wog.notas.replace(/'/g, "\\'")}')">
+                            <button class="historial-accion notas" onclick="mostrarNotasWog('${wog.id}')">
                                 <i class="fas fa-sticky-note"></i>
                             </button>
                         ` : ''}
@@ -175,6 +193,8 @@ async function cargarHistorial() {
             historialContainer.appendChild(wogElement);
         });
         
+        console.log('Historial renderizado con', historialContainer.children.length, 'elementos');
+        
     } catch (error) {
         console.error('Error al cargar historial:', error);
         historialContainer.innerHTML = `
@@ -183,6 +203,39 @@ async function cargarHistorial() {
                 <p>Error al cargar historial: ${error.message}</p>
             </div>
         `;
+    }
+}
+
+// Mostrar notas de un WOG
+async function mostrarNotasWog(wogId) {
+    try {
+        // Obtener los datos del WOG
+        const doc = await db.collection(COLECCION_WOGS).doc(wogId).get();
+        
+        if (!doc.exists) {
+            mostrarToast('No se encontró el WOG', true);
+            return;
+        }
+        
+        const wog = doc.data();
+        const fecha = wog.fecha?.toDate ? wog.fecha.toDate() : new Date(wog.fecha);
+        
+        // Configurar el modal
+        modalNotasTitulo.textContent = `Notas del WOG - ${formatearFecha(fecha)}`;
+        
+        // Mostrar contenido o placeholder
+        if (wog.notas && wog.notas.trim()) {
+            modalNotasContenido.textContent = wog.notas;
+        } else {
+            modalNotasContenido.innerHTML = '<div class="notas-placeholder">No hay notas registradas para este WOG.</div>';
+        }
+        
+        // Mostrar modal
+        modalNotas.style.display = 'block';
+        
+    } catch (error) {
+        console.error('Error al cargar notas:', error);
+        mostrarToast('Error al cargar notas del WOG', true);
     }
 }
 
@@ -335,3 +388,4 @@ async function cargarParticipantesCache() {
 
 // Exportar funciones necesarias al alcance global
 window.confirmarEliminarWog = confirmarEliminarWog;
+window.mostrarNotasWog = mostrarNotasWog;
