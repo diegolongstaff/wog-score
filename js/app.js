@@ -324,7 +324,11 @@ async function cargarHistorialDirecto() {
         const participantesSnap = await db.collection('participantes').get();
         const participantesMap = {};
         participantesSnap.docs.forEach(doc => {
-            participantesMap[doc.id] = doc.data().nombre || 'Desconocido';
+            const participanteData = doc.data();
+            participantesMap[doc.id] = {
+                nombre: participanteData.nombre || 'Desconocido',
+                imagen_url: participanteData.imagen_url || null
+            };
         });
         
         // Renderizar WOGs
@@ -334,23 +338,45 @@ async function cargarHistorialDirecto() {
             const fecha = wog.fecha?.toDate ? wog.fecha.toDate() : new Date();
             
             // Obtener nombre de sede
-            const sedeNombre = participantesMap[wog.sede] || 'Desconocido';
+            const sedeInfo = participantesMap[wog.sede] || { nombre: 'Desconocido', imagen_url: null };
             
             // Obtener nombres de asadores
             const asadoresNombres = Array.isArray(wog.asadores) ? wog.asadores
-                .map(id => participantesMap[id] || 'Desconocido')
+                .map(id => participantesMap[id]?.nombre || 'Desconocido')
                 .join(' / ') : 'No disponible';
             
             // Obtener nombre de compras
             let comprasNombres = '';
             if (wog.comprasCompartidas && wog.comprasCompartidas.length > 0) {
                 comprasNombres = wog.comprasCompartidas
-                    .map(id => participantesMap[id] || 'Desconocido')
+                    .map(id => participantesMap[id]?.nombre || 'Desconocido')
                     .join(' / ');
             } else if (wog.compras) {
-                comprasNombres = participantesMap[wog.compras] || 'Desconocido';
+                comprasNombres = participantesMap[wog.compras]?.nombre || 'Desconocido';
             } else {
                 comprasNombres = 'No disponible';
+            }
+            
+            // Preparar avatares de asistentes
+            let asistentesAvatars = '';
+            if (wog.asistentes && wog.asistentes.length > 0) {
+                asistentesAvatars = `
+                    <div class="historial-detail">
+                        <div class="historial-label">Asistentes</div>
+                        <div class="historial-asistentes-avatars">
+                            ${wog.asistentes.map(id => {
+                                const participante = participantesMap[id];
+                                if (!participante) return '';
+                                
+                                if (participante.imagen_url) {
+                                    return `<img src="${participante.imagen_url}" title="${participante.nombre}" class="asistente-mini-avatar">`;
+                                } else {
+                                    return `<div class="asistente-mini-avatar mini-avatar-placeholder" title="${participante.nombre}">${obtenerIniciales(participante.nombre)}</div>`;
+                                }
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
             }
             
             html += `
@@ -373,24 +399,34 @@ async function cargarHistorialDirecto() {
                     </div>
                     
                     <div class="historial-detalles">
-                        <div class="historial-detail">
-                            <div class="historial-label">Sede</div>
-                            <div class="historial-value">${sedeNombre}</div>
-                        </div>
+                        ${wog.foto_url ? `
+                            <div class="historial-imagen">
+                                <img src="${wog.foto_url}" alt="Foto del WOG" class="historial-wog-imagen">
+                            </div>
+                        ` : ''}
                         
-                        <div class="historial-detail">
-                            <div class="historial-label">Subsede</div>
-                            <div class="historial-value">${wog.subsede || '-'}</div>
-                        </div>
-                        
-                        <div class="historial-detail">
-                            <div class="historial-label">Compras</div>
-                            <div class="historial-value">${comprasNombres}</div>
-                        </div>
-                        
-                        <div class="historial-detail">
-                            <div class="historial-label">Asador</div>
-                            <div class="historial-value">${asadoresNombres}</div>
+                        <div class="historial-info">
+                            <div class="historial-detail">
+                                <div class="historial-label">Sede</div>
+                                <div class="historial-value">${sedeInfo.nombre}</div>
+                            </div>
+                            
+                            <div class="historial-detail">
+                                <div class="historial-label">Subsede</div>
+                                <div class="historial-value">${wog.subsede || '-'}</div>
+                            </div>
+                            
+                            <div class="historial-detail">
+                                <div class="historial-label">Compras</div>
+                                <div class="historial-value">${comprasNombres}</div>
+                            </div>
+                            
+                            <div class="historial-detail">
+                                <div class="historial-label">Asador</div>
+                                <div class="historial-value">${asadoresNombres}</div>
+                            </div>
+                            
+                            ${asistentesAvatars}
                         </div>
                     </div>
                 </div>
