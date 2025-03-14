@@ -357,7 +357,7 @@ async function cargarHistorialDirecto() {
                 comprasNombres = 'No disponible';
             }
             
-          // Preparar avatares de asistentes
+// Preparar avatares de asistentes
 let asistentesAvatars = '';
 if (wog.asistentes && wog.asistentes.length > 0) {
     // Limitar a 15 avatares como máximo para evitar sobrecarga visual
@@ -373,12 +373,12 @@ if (wog.asistentes && wog.asistentes.length > 0) {
                     if (!participante) return '';
                     
                     if (participante.imagen_url) {
-                        return `<img src="${participante.imagen_url}" title="${participante.nombre}" class="asistente-mini-avatar">`;
+                        return `<img src="${participante.imagen_url}" title="${participante.nombre}" style="width: 25px; height: 25px; border-radius: 50%; object-fit: cover; border: 1px solid #f7c59f; display: inline-block; margin: 2px;">`;
                     } else {
-                        return `<div class="asistente-mini-avatar mini-avatar-placeholder" title="${participante.nombre}">${obtenerIniciales(participante.nombre)}</div>`;
+                        return `<div style="width: 25px; height: 25px; border-radius: 50%; background-color: #ff6b35; color: white; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; margin: 2px;" title="${participante.nombre}">${obtenerIniciales(participante.nombre)}</div>`;
                     }
                 }).join('')}
-                ${asistentesExtra > 0 ? `<div class="asistente-mini-avatar mini-avatar-placeholder asistente-extra" title="Y ${asistentesExtra} más">+${asistentesExtra}</div>` : ''}
+                ${asistentesExtra > 0 ? `<div style="width: 25px; height: 25px; border-radius: 50%; background-color: #888; color: white; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; margin: 2px;" title="Y ${asistentesExtra} más">+${asistentesExtra}</div>` : ''}
             </div>
         </div>
     `;
