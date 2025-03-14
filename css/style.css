@@ -1197,7 +1197,7 @@ input[type="file"] {
     gap: 15px;
 }
 
-/* Estilos para mini-avatares de asistentes - versión corregida */
+/* Estilos para mini-avatares de asistentes - versión corregida 
 .historial-asistentes-avatars {
     display: flex !important;
     flex-wrap: wrap !important;
@@ -1232,6 +1232,7 @@ input[type="file"] {
     background-color: #888 !important;
     font-size: 0.6rem !important;
 }
+    */
 /* Estilos para la vista previa de la foto del WOG */
 #preview-foto-wog {
     width: 150px;
