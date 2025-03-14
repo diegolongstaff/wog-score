@@ -185,9 +185,11 @@ document.addEventListener('DOMContentLoaded', inicializarApp);
 function inicializarApp() {
     console.log('Inicializando WOG Score App...');
     
-    // Configurar navegación por pestañas (simplificado)
-    configurarNavegacionSimple();
-    
+// Configuración simplificada de navegación por pestañas
+function configurarNavegacionSimple() {
+    // No hacemos nada aquí, dejamos que el HTML maneje los clics
+    console.log('Configuración de navegación simplificada');
+}
     // Cargar datos iniciales del dashboard
     cargarDashboard();
     
