@@ -545,6 +545,7 @@ async function mostrarNotasWogDirecto(wogId) {
 }
 
 // Función para editar un WOG existente
+// Editar esta función para mejorar el llenado de asistentes, asadores, y compras
 async function editarWogDirecto(wogId) {
     try {
         // Obtener datos del WOG
@@ -560,65 +561,92 @@ async function editarWogDirecto(wogId) {
         // Abrir pestaña de nuevo WOG
         openTab('tab-nuevo');
         
-        // Llenar el formulario con los datos del WOG
-        document.getElementById('fecha').value = formatearFechaInput(wog.fecha.toDate());
-        document.getElementById('sede').value = wog.sede || '';
-        document.getElementById('subsede').value = wog.subsede || '';
-        
-        // Manejar compras
-        if (wog.comprasCompartidas && wog.comprasCompartidas.length > 0) {
-            document.getElementById('compras').value = 'compartido';
-            toggleComprasCompartidas();
+        // Esperar a que se cargue completamente el formulario
+        setTimeout(() => {
+            // Llenar el formulario con los datos del WOG
+            document.getElementById('fecha').value = formatearFechaInput(wog.fecha.toDate());
+            document.getElementById('sede').value = wog.sede || '';
+            document.getElementById('subsede').value = wog.subsede || '';
             
-            // Marcar las casillas correspondientes
-            wog.comprasCompartidas.forEach(id => {
-                const checkbox = document.getElementById(`compra-compartida-${id}`);
-                if (checkbox) checkbox.checked = true;
-            });
-        } else if (wog.compras) {
-            document.getElementById('compras').value = wog.compras;
-        }
-        
-        // Manejar asadores (podría requerir añadir más selectores)
-        if (wog.asadores && wog.asadores.length > 0) {
-            // Obtener el primer asador
-            const primerAsador = document.querySelector('.asador-select');
-            if (primerAsador) primerAsador.value = wog.asadores[0] || '';
-            
-            // Añadir asadores adicionales
-            for (let i = 1; i < wog.asadores.length; i++) {
-                agregarSelectorAsador();
-                const asadorSelects = document.querySelectorAll('.asador-select');
-                if (asadorSelects[i]) asadorSelects[i].value = wog.asadores[i];
+            // Manejar compras
+            if (wog.comprasCompartidas && wog.comprasCompartidas.length > 0) {
+                document.getElementById('compras').value = 'compartido';
+                toggleComprasCompartidas();
+                
+                // Marcar las casillas correspondientes
+                setTimeout(() => {
+                    wog.comprasCompartidas.forEach(id => {
+                        const checkbox = document.getElementById(`compra-compartida-${id}`);
+                        if (checkbox) checkbox.checked = true;
+                    });
+                }, 100);
+            } else if (wog.compras) {
+                document.getElementById('compras').value = wog.compras;
             }
-        }
-        
-        // Marcar asistentes
-        if (wog.asistentes && wog.asistentes.length > 0) {
-            wog.asistentes.forEach(id => {
-                const checkbox = document.getElementById(`asistente-${id}`);
-                if (checkbox) checkbox.checked = true;
-            });
-        }
-        
-        // Llenar notas
-        document.getElementById('notas').value = wog.notas || '';
-        
-        // Si hay previsualización de foto y hay foto en el WOG
-        const previewFotoWog = document.getElementById('preview-foto-wog');
-        if (previewFotoWog && wog.foto_url) {
-            previewFotoWog.innerHTML = `<img src="${wog.foto_url}" alt="Foto del WOG">`;
-        }
-        
-        // Modificar formulario para modo edición
-        const submitBtn = document.querySelector('#nuevo-wog-form button[type="submit"]');
-        submitBtn.textContent = 'Actualizar WOG';
-        
-        // Almacenar ID del WOG que se está editando
-        document.getElementById('nuevo-wog-form').setAttribute('data-editing-id', wogId);
-        
-        // Mostrar mensaje
-        mostrarToast('Editando WOG, realiza los cambios necesarios');
+            
+            // Limpiar asadores adicionales primero
+            const asadoresContainer = document.getElementById('asadores-container');
+            const primerAsador = asadoresContainer.querySelector('.asador-item');
+            asadoresContainer.innerHTML = '';
+            asadoresContainer.appendChild(primerAsador);
+            
+            // Manejar asadores
+            if (wog.asadores && wog.asadores.length > 0) {
+                // Establecer el primer asador
+                const primerAsadorSelect = document.querySelector('.asador-select');
+                if (primerAsadorSelect) primerAsadorSelect.value = wog.asadores[0] || '';
+                
+                // Añadir asadores adicionales si hay más de uno
+                for (let i = 1; i < wog.asadores.length; i++) {
+                    agregarSelectorAsador();
+                }
+                
+                // Establecer valores para todos los asadores
+                setTimeout(() => {
+                    const asadorSelects = document.querySelectorAll('.asador-select');
+                    wog.asadores.forEach((asadorId, index) => {
+                        if (asadorSelects[index]) {
+                            asadorSelects[index].value = asadorId;
+                        }
+                    });
+                }, 100);
+            }
+            
+            // Marcar asistentes
+            if (wog.asistentes && wog.asistentes.length > 0) {
+                // Desmarcar todos primero
+                document.querySelectorAll('#asistentes-lista input[type="checkbox"]').forEach(cb => {
+                    cb.checked = false;
+                });
+                
+                // Marcar los que corresponden
+                wog.asistentes.forEach(id => {
+                    const checkbox = document.getElementById(`asistente-${id}`);
+                    if (checkbox) checkbox.checked = true;
+                });
+            }
+            
+            // Llenar notas
+            document.getElementById('notas').value = wog.notas || '';
+            
+            // Si hay foto en el WOG, mostrarla en la previsualización
+            const previewFotoWog = document.getElementById('preview-foto-wog');
+            if (previewFotoWog && wog.foto_url) {
+                previewFotoWog.innerHTML = `<img src="${wog.foto_url}" alt="Foto del WOG">`;
+            } else if (previewFotoWog) {
+                previewFotoWog.innerHTML = '';
+            }
+            
+            // Modificar formulario para modo edición
+            const submitBtn = document.querySelector('#nuevo-wog-form button[type="submit"]');
+            submitBtn.textContent = 'Actualizar WOG';
+            
+            // Almacenar ID del WOG que se está editando
+            document.getElementById('nuevo-wog-form').setAttribute('data-editing-id', wogId);
+            
+            // Mostrar mensaje
+            mostrarToast('Editando WOG, realiza los cambios necesarios');
+        }, 300); // Dar tiempo a que se cargue el formulario
         
     } catch (error) {
         console.error('Error al cargar WOG para editar:', error);
