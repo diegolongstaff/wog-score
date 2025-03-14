@@ -1223,7 +1223,10 @@ input[type="file"] {
     font-size: 0.7rem;
     font-weight: bold;
 }
-
+.asistente-extra {
+    background-color: #888;
+    font-size: 0.6rem;
+}
 /* Estilos para la vista previa de la foto del WOG */
 #preview-foto-wog {
     width: 150px;
