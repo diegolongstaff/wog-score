@@ -1180,15 +1180,19 @@ input[type="file"] {
 .historial-imagen {
     flex: 0 0 120px;
     margin-right: 10px;
+    max-width: 120px;
 }
 
 .historial-wog-imagen {
     width: 120px;
     height: 120px;
+    max-width: 120px;
+    max-height:120px;
     object-fit: cover;
     border-radius: 8px;
     border: 2px solid var(--color-secondary);
     cursor: pointer;
+    display: block;
 }
 
 .historial-info {
