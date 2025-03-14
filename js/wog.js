@@ -262,25 +262,36 @@ async function guardarWog(event) {
             
         });
         
-        // Preparar objeto WOG
-// Crear fecha correcta respetando la zona horaria
-const fechaPartes = fecha.split('-');
-const fechaCorrecta = new Date(
-    parseInt(fechaPartes[0]),    // año
-    parseInt(fechaPartes[1]) - 1, // mes (0-11)
-    parseInt(fechaPartes[2])     // día
-);
-// Asegurar que se mantenga el día seleccionado
-fechaCorrecta.setHours(12, 0, 0, 0);
-        
-        const wogData = {
-            fecha: firebase.firestore.Timestamp.fromDate(fechaCorrecta),
-            sede,
-            subsede,
-            asadores,
-            asistentes,
-            notas,
-        };
+        // Crear fecha sin problemas de zona horaria
+const fechaInputValue = fecha; // Guarda el valor original
+let fechaCorrecta;
+
+try {
+  // Método 1: Usando las partes de la fecha con hora fija
+  const fechaPartes = fechaInputValue.split('-').map(part => parseInt(part, 10));
+  fechaCorrecta = new Date(fechaPartes[0], fechaPartes[1] - 1, fechaPartes[2], 12, 0, 0);
+  
+  // Verificar que no haya cambiado el día
+  if (fechaCorrecta.getDate() !== fechaPartes[2]) {
+    // Método 2: Alternativa con string ISO
+    fechaCorrecta = new Date(`${fechaInputValue}T12:00:00`);
+  }
+} catch (e) {
+  console.error("Error creando fecha:", e);
+  // Método de respaldo
+  fechaCorrecta = new Date(new Date(fechaInputValue).setHours(12, 0, 0, 0));
+}
+
+console.log("Fecha original:", fechaInputValue, "Fecha convertida:", fechaCorrecta);
+
+const wogData = {
+  fecha: firebase.firestore.Timestamp.fromDate(fechaCorrecta),
+  sede,
+  subsede,
+  asadores,
+  asistentes,
+  notas,
+};
         
         // Si es un nuevo WOG, añadir fecha de creación
         if (!isEditing) {
