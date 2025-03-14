@@ -185,10 +185,49 @@ document.addEventListener('DOMContentLoaded', inicializarApp);
 function inicializarApp() {
     console.log('Inicializando WOG Score App...');
     
-// Configuración simplificada de navegación por pestañas
+/*// Configuración simplificada de navegación por pestañas
 function configurarNavegacionSimple() {
     // No hacemos nada aquí, dejamos que el HTML maneje los clics
     console.log('Configuración de navegación simplificada');
+}*/
+
+    // Función simplificada para abrir pestañas
+function openTab(tabId) {
+    console.log('Cambiando a pestaña:', tabId);
+    
+    // Ocultar todas las pestañas
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    // Desactivar todos los botones
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.classList.remove('active');
+    });
+    
+    // Mostrar la pestaña seleccionada
+    const tabElement = document.getElementById(tabId);
+    if (tabElement) {
+        tabElement.classList.add('active');
+        
+        // Activar el botón correspondiente
+        document.querySelectorAll('.tab-button').forEach(button => {
+            const targetId = button.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
+            if (targetId === tabId) {
+                button.classList.add('active');
+            }
+        });
+        
+        // Cargar historial específicamente cuando se abre esa pestaña
+        if (tabId === 'tab-historial') {
+            cargarHistorialDirecto();
+        }
+        
+        // Disparar evento cambio de pestaña
+        document.dispatchEvent(new CustomEvent('tabChanged', { detail: { tabId } }));
+    } else {
+        console.error('No se encontró el tab:', tabId);
+    }
 }
     // Cargar datos iniciales del dashboard
     cargarDashboard();
