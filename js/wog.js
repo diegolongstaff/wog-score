@@ -263,8 +263,18 @@ async function guardarWog(event) {
         });
         
         // Preparar objeto WOG
+// Crear fecha correcta respetando la zona horaria
+const fechaPartes = fecha.split('-');
+const fechaCorrecta = new Date(
+    parseInt(fechaPartes[0]),    // año
+    parseInt(fechaPartes[1]) - 1, // mes (0-11)
+    parseInt(fechaPartes[2])     // día
+);
+// Asegurar que se mantenga el día seleccionado
+fechaCorrecta.setHours(12, 0, 0, 0);
+        
         const wogData = {
-            fecha: firebase.firestore.Timestamp.fromDate(new Date(fecha)),
+            fecha: firebase.firestore.Timestamp.fromDate(fechaCorrecta),
             sede,
             subsede,
             asadores,
