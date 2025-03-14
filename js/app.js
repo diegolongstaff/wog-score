@@ -357,27 +357,32 @@ async function cargarHistorialDirecto() {
                 comprasNombres = 'No disponible';
             }
             
-            // Preparar avatares de asistentes
-            let asistentesAvatars = '';
-            if (wog.asistentes && wog.asistentes.length > 0) {
-                asistentesAvatars = `
-                    <div class="historial-detail">
-                        <div class="historial-label">Asistentes</div>
-                        <div class="historial-asistentes-avatars">
-                            ${wog.asistentes.map(id => {
-                                const participante = participantesMap[id];
-                                if (!participante) return '';
-                                
-                                if (participante.imagen_url) {
-                                    return `<img src="${participante.imagen_url}" title="${participante.nombre}" class="asistente-mini-avatar">`;
-                                } else {
-                                    return `<div class="asistente-mini-avatar mini-avatar-placeholder" title="${participante.nombre}">${obtenerIniciales(participante.nombre)}</div>`;
-                                }
-                            }).join('')}
-                        </div>
-                    </div>
-                `;
-            }
+          // Preparar avatares de asistentes
+let asistentesAvatars = '';
+if (wog.asistentes && wog.asistentes.length > 0) {
+    // Limitar a 15 avatares como máximo para evitar sobrecarga visual
+    const asistentesLimitados = wog.asistentes.slice(0, 15);
+    const asistentesExtra = wog.asistentes.length > 15 ? wog.asistentes.length - 15 : 0;
+    
+    asistentesAvatars = `
+        <div class="historial-detail">
+            <div class="historial-label">Asistentes (${wog.asistentes.length})</div>
+            <div class="historial-asistentes-avatars">
+                ${asistentesLimitados.map(id => {
+                    const participante = participantesMap[id];
+                    if (!participante) return '';
+                    
+                    if (participante.imagen_url) {
+                        return `<img src="${participante.imagen_url}" title="${participante.nombre}" class="asistente-mini-avatar">`;
+                    } else {
+                        return `<div class="asistente-mini-avatar mini-avatar-placeholder" title="${participante.nombre}">${obtenerIniciales(participante.nombre)}</div>`;
+                    }
+                }).join('')}
+                ${asistentesExtra > 0 ? `<div class="asistente-mini-avatar mini-avatar-placeholder asistente-extra" title="Y ${asistentesExtra} más">+${asistentesExtra}</div>` : ''}
+            </div>
+        </div>
+    `;
+}
             
             html += `
                 <div class="historial-item">
