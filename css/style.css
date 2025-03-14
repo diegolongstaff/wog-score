@@ -1188,6 +1188,7 @@ input[type="file"] {
     object-fit: cover;
     border-radius: 8px;
     border: 2px solid var(--color-secondary);
+    cursor: pointer;
 }
 
 .historial-info {
