@@ -688,4 +688,24 @@ async function actualizarPuntuaciones(wogData) {
             
             for (const compraId of wogData.comprasCompartidas) {
                 const compraRef = db.collection(COLECCION_PARTICIPANTES).doc(compraId);
+                await compraRef.update({
+                    puntos_compras: firebase.firestore.FieldValue.increment(puntoPorCompra)
+                });
+            }
+        } else if (wogData.compras) {
+            const compraRef = db.collection(COLECCION_PARTICIPANTES).doc(wogData.compras);
+            await compraRef.update({
+                puntos_compras: firebase.firestore.FieldValue.increment(1)
+            });
+        }
+    } catch (error) {
+        console.error('Error al actualizar puntuaciones:', error);
+        // Este error no debería detener el proceso de guardar el WOG
+    }
+}
+
+// Exportar funciones necesarias al alcance global
+window.toggleComprasCompartidas = toggleComprasCompartidas;
+window.agregarSelectorAsador = agregarSelectorAsador;
+window.previsualizarFotoWog = previsualizarFotoWog;
                 
