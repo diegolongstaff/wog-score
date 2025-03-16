@@ -79,7 +79,7 @@ function openTab(tabId) {
         
         // Cargar historial específicamente cuando se abre esa pestaña
         if (tabId === 'tab-historial') {
-            cargarHistorialDirecto();
+            ;
         }
         
         // Disparar evento cambio de pestaña
@@ -417,6 +417,9 @@ async function cargarHistorialDirecto() {
                                     <i class="fas fa-sticky-note"></i>
                                 </button>
                             ` : ''}
+                            <button class="historial-accion editar" onclick="editarWogDirecto('${doc.id}')">
+                                    <i class="fas fa-edit"></i>
+                                </button>
                             <button class="historial-accion eliminar" onclick="confirmarEliminarWogDirecto('${doc.id}')">
                                 <i class="fas fa-trash"></i>
                             </button>
