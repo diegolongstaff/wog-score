@@ -8,7 +8,7 @@ function inicializarApp() {
     console.log('Inicializando WOG Score App...');
     
     // Configurar navegación por pestañas
-    configurarNavegacionSimple();
+    configurarNavegacion();
     
     // Cargar datos iniciales del dashboard
     cargarDashboard();
@@ -25,27 +25,26 @@ function inicializarApp() {
     console.log('Aplicación inicializada correctamente');
 }
 
-// Configuración de navegación por pestañas
-function configurarNavegacionSimple() {
-    // Eliminar cualquier evento onclick existente
-    document.querySelectorAll('.tab-button').forEach(button => {
-        // Clonar y reemplazar para eliminar event listeners
-        const newBtn = button.cloneNode(true);
-        button.parentNode.replaceChild(newBtn, button);
+// Configuración mejorada de navegación por pestañas
+function configurarNavegacion() {
+    // Eliminar eventos antiguos
+    const tabButtons = document.querySelectorAll('.tab-button');
+    
+    // Clonar y reemplazar cada botón para asegurar la eliminación de todos los event listeners
+    tabButtons.forEach(button => {
+        const newButton = button.cloneNode(true);
+        button.parentNode.replaceChild(newButton, button);
     });
-
-    // Asignar nuevos event listeners
+    
+    // Añadir nuevos event listeners
     document.querySelectorAll('.tab-button').forEach(button => {
-        button.addEventListener('click', function(event) {
-            event.preventDefault();
-            
-            // Obtener el ID de la pestaña del atributo onclick
-            const match = this.getAttribute('onclick')?.match(/'([^']+)'/);
-            if (match && match[1]) {
-                openTab(match[1]);
+        button.addEventListener('click', function() {
+            // Extraer el ID del tab del atributo onclick
+            const idMatch = this.getAttribute('onclick')?.match(/'([^']+)'/);
+            if (idMatch && idMatch[1]) {
+                // Llamar a la función para abrir la pestaña
+                openTab(idMatch[1]);
             }
-            
-            return false;
         });
     });
 }
@@ -71,15 +70,15 @@ function openTab(tabId) {
         
         // Activar el botón correspondiente
         document.querySelectorAll('.tab-button').forEach(button => {
-            const onclick = button.getAttribute('onclick');
-            if (onclick && onclick.includes(tabId)) {
+            const onclickAttr = button.getAttribute('onclick');
+            if (onclickAttr && onclickAttr.includes(tabId)) {
                 button.classList.add('active');
             }
         });
         
         // Cargar historial específicamente cuando se abre esa pestaña
         if (tabId === 'tab-historial') {
-            ;
+            cargarHistorialDirecto();
         }
         
         // Disparar evento cambio de pestaña
@@ -87,8 +86,6 @@ function openTab(tabId) {
     } else {
         console.error('No se encontró el tab:', tabId);
     }
-    
-    return false; // Importante para evitar comportamiento indeseado
 }
 
 // Cargar datos para el dashboard inicial
@@ -699,7 +696,6 @@ function mostrarImagenCompleta(imgSrc, titulo) {
         }
     });
 }
-// Añadir esta función al final de app.js, antes de los exports
 
 // Función para editar un WOG existente
 async function editarWogDirecto(wogId) {
@@ -894,9 +890,6 @@ async function editarWogDirecto(wogId) {
         mostrarToast('Error al cargar datos del WOG', true);
     }
 }
-
-// No olvides añadir la función al objeto window
-// Agrega esta línea al final de app.js junto con los otros exports
 
 // Exportar funciones necesarias al alcance global
 window.openTab = openTab;
