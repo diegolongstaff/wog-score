@@ -7,8 +7,8 @@ document.addEventListener('DOMContentLoaded', inicializarApp);
 function inicializarApp() {
     console.log('Inicializando WOG Score App...');
     
-    // Configurar navegación por pestañas
-    configurarNavegacion();
+    // Configurar navegación por pestañas con un enfoque completamente nuevo
+    configurarNavegacionDirecta();
     
     // Cargar datos iniciales del dashboard
     cargarDashboard();
@@ -25,68 +25,104 @@ function inicializarApp() {
     console.log('Aplicación inicializada correctamente');
 }
 
-// Configuración mejorada de navegación por pestañas
-function configurarNavegacion() {
-    // Eliminar eventos antiguos
-    const tabButtons = document.querySelectorAll('.tab-button');
+// Sistema completamente nuevo de navegación por pestañas
+function configurarNavegacionDirecta() {
+    // Mapeo directo entre botones y pestañas
+    const tabs = [
+        { buttonSelector: '.tab-button:nth-child(1)', tabId: 'tab-home' },
+        { buttonSelector: '.tab-button:nth-child(2)', tabId: 'tab-nuevo' },
+        { buttonSelector: '.tab-button:nth-child(3)', tabId: 'tab-ranking' },
+        { buttonSelector: '.tab-button:nth-child(4)', tabId: 'tab-historial' },
+        { buttonSelector: '.tab-button:nth-child(5)', tabId: 'tab-participantes' }
+    ];
     
-    // Clonar y reemplazar cada botón para asegurar la eliminación de todos los event listeners
-    tabButtons.forEach(button => {
-        const newButton = button.cloneNode(true);
-        button.parentNode.replaceChild(newButton, button);
+    // Activar la primera pestaña por defecto
+    activarPestana('tab-home');
+    
+    // Configurar cada botón
+    tabs.forEach(tab => {
+        const button = document.querySelector(tab.buttonSelector);
+        if (button) {
+            // Eliminar cualquier onclick existente
+            button.removeAttribute('onclick');
+            
+            // Añadir nuevo event listener
+            button.addEventListener('click', function(event) {
+                event.preventDefault();
+                activarPestana(tab.tabId);
+                return false;
+            });
+        }
     });
     
-    // Añadir nuevos event listeners
-    document.querySelectorAll('.tab-button').forEach(button => {
-        button.addEventListener('click', function() {
-            // Extraer el ID del tab del atributo onclick
-            const idMatch = this.getAttribute('onclick')?.match(/'([^']+)'/);
-            if (idMatch && idMatch[1]) {
-                // Llamar a la función para abrir la pestaña
-                openTab(idMatch[1]);
+    // También configurar los enlaces del dashboard
+    const dashboardLinks = document.querySelectorAll('.dashboard-link');
+    dashboardLinks.forEach(link => {
+        link.addEventListener('click', function(event) {
+            event.preventDefault();
+            // Extraer el tabId del onclick original
+            const match = this.getAttribute('onclick')?.match(/openTab\('([^']+)'\)/);
+            if (match && match[1]) {
+                activarPestana(match[1]);
             }
+            return false;
         });
     });
 }
 
-// Función para abrir pestañas
-function openTab(tabId) {
-    console.log('Cambiando a pestaña:', tabId);
+// Función simplificada para activar una pestaña
+function activarPestana(tabId) {
+    console.log('Activando pestaña:', tabId);
     
-    // Ocultar todas las pestañas
+    // 1. Ocultar todas las pestañas
     document.querySelectorAll('.tab-content').forEach(tab => {
         tab.classList.remove('active');
     });
     
-    // Desactivar todos los botones
+    // 2. Desactivar todos los botones
     document.querySelectorAll('.tab-button').forEach(button => {
         button.classList.remove('active');
     });
     
-    // Mostrar la pestaña seleccionada
-    const tabElement = document.getElementById(tabId);
-    if (tabElement) {
-        tabElement.classList.add('active');
-        
-        // Activar el botón correspondiente
-        document.querySelectorAll('.tab-button').forEach(button => {
-            const onclickAttr = button.getAttribute('onclick');
-            if (onclickAttr && onclickAttr.includes(tabId)) {
-                button.classList.add('active');
-            }
-        });
-        
-        // Cargar historial específicamente cuando se abre esa pestaña
-        if (tabId === 'tab-historial') {
+    // 3. Activar la pestaña solicitada
+    const tab = document.getElementById(tabId);
+    if (tab) {
+        tab.classList.add('active');
+    } else {
+        console.error('Pestaña no encontrada:', tabId);
+    }
+    
+    // 4. Activar el botón correspondiente
+    // Usamos una solución robusta que no depende de atributos existentes
+    const tabIndex = {
+        'tab-home': 0,
+        'tab-nuevo': 1,
+        'tab-ranking': 2,
+        'tab-historial': 3,
+        'tab-participantes': 4
+    }[tabId];
+    
+    if (tabIndex !== undefined) {
+        const buttons = document.querySelectorAll('.tab-button');
+        if (buttons[tabIndex]) {
+            buttons[tabIndex].classList.add('active');
+        }
+    }
+    
+    // 5. Acciones específicas para pestañas particulares
+    if (tabId === 'tab-historial') {
+        if (typeof cargarHistorialDirecto === 'function') {
             cargarHistorialDirecto();
         }
-        
-        // Disparar evento cambio de pestaña
-        document.dispatchEvent(new CustomEvent('tabChanged', { detail: { tabId } }));
-    } else {
-        console.error('No se encontró el tab:', tabId);
     }
+    
+    // 6. Disparar evento de cambio de pestaña
+    document.dispatchEvent(new CustomEvent('tabChanged', { 
+        detail: { tabId: tabId } 
+    }));
 }
+
+// El resto de funciones permanecen igual...
 
 // Cargar datos para el dashboard inicial
 async function cargarDashboard() {
@@ -94,16 +130,29 @@ async function cargarDashboard() {
         // Obtener conteo de WOGs
         const wogsSnapshot = await db.collection(COLECCION_WOGS).get();
         
-        // Añadir enlace al historial
-        document.getElementById('total-wogs').innerHTML = `
-            <a href="#" onclick="openTab('tab-historial'); return false;" class="dashboard-link">
-                ${wogsSnapshot.size}
-            </a>
-        `;
+        // Añadir enlace al historial con el nuevo sistema de navegación
+        const totalWogsElement = document.getElementById('total-wogs');
+        if (totalWogsElement) {
+            totalWogsElement.innerHTML = `
+                <a href="#" class="dashboard-link dashboard-historial">
+                    ${wogsSnapshot.size}
+                </a>
+            `;
+            
+            // Configurar evento para el enlace
+            document.querySelector('.dashboard-historial')?.addEventListener('click', function(event) {
+                event.preventDefault();
+                activarPestana('tab-historial');
+                return false;
+            });
+        }
         
         // Obtener conteo de participantes
         const participantesSnapshot = await db.collection(COLECCION_PARTICIPANTES).get();
-        document.getElementById('total-participantes').textContent = participantesSnapshot.size;
+        const totalParticipantesElement = document.getElementById('total-participantes');
+        if (totalParticipantesElement) {
+            totalParticipantesElement.textContent = participantesSnapshot.size;
+        }
         
         // Calcular líder (participante con más puntos)
         if (participantesSnapshot.size > 0) {
@@ -123,12 +172,20 @@ async function cargarDashboard() {
                 }
             }
             
-            if (lider) {
-                document.getElementById('current-leader').innerHTML = `
-                    <a href="#" onclick="openTab('tab-ranking'); return false;" class="dashboard-link">
+            const currentLeaderElement = document.getElementById('current-leader');
+            if (currentLeaderElement && lider) {
+                currentLeaderElement.innerHTML = `
+                    <a href="#" class="dashboard-link dashboard-ranking">
                         ${lider}
                     </a>
                 `;
+                
+                // Configurar evento para el enlace
+                document.querySelector('.dashboard-ranking')?.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    activarPestana('tab-ranking');
+                    return false;
+                });
             }
         }
         
@@ -143,7 +200,11 @@ async function cargarDashboard() {
         // Formatear fecha
         const opciones = { weekday: 'long', day: 'numeric', month: 'long' };
         const fechaFormateada = proximoMartes.toLocaleDateString('es-ES', opciones);
-        document.getElementById('next-wog').textContent = fechaFormateada;
+        
+        const nextWogElement = document.getElementById('next-wog');
+        if (nextWogElement) {
+            nextWogElement.textContent = fechaFormateada;
+        }
         
     } catch (error) {
         console.error('Error al cargar datos del dashboard:', error);
@@ -194,13 +255,15 @@ function configurarEventosGlobales() {
 // Mostrar un mensaje toast
 function mostrarToast(mensaje, esError = false) {
     const toast = document.getElementById('toast');
-    toast.textContent = mensaje;
-    toast.className = esError ? 'toast show error' : 'toast show';
-    
-    // Ocultar toast después de 3 segundos
-    setTimeout(() => {
-        toast.className = toast.className.replace('show', '');
-    }, 3000);
+    if (toast) {
+        toast.textContent = mensaje;
+        toast.className = esError ? 'toast show error' : 'toast show';
+        
+        // Ocultar toast después de 3 segundos
+        setTimeout(() => {
+            toast.className = toast.className.replace('show', '');
+        }, 3000);
+    }
 }
 
 // Formatear fecha para un input date
@@ -712,7 +775,7 @@ async function editarWogDirecto(wogId) {
         console.log("Editando WOG:", wogId, wog);
         
         // Abrir pestaña de nuevo WOG
-        openTab('tab-nuevo');
+        activarPestana('tab-nuevo');
         
         // Esperar a que se complete la carga del formulario
         setTimeout(async () => {
@@ -891,8 +954,8 @@ async function editarWogDirecto(wogId) {
     }
 }
 
-// Exportar funciones necesarias al alcance global
-window.openTab = openTab;
+// Exportar funciones al scope global
+window.openTab = activarPestana; // Reemplazar la antigua función
 window.mostrarToast = mostrarToast;
 window.formatearFecha = formatearFecha;
 window.obtenerIniciales = obtenerIniciales;
