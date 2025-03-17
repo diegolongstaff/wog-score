@@ -7,8 +7,8 @@ document.addEventListener('DOMContentLoaded', inicializarApp);
 function inicializarApp() {
     console.log('Inicializando WOG Score App...');
     
-    // Configurar navegación por pestañas con un enfoque completamente nuevo
-    configurarNavegacionDirecta();
+    // Configurar navegación por pestañas (simplificado)
+    configurarNavegacionSimple();
     
     // Cargar datos iniciales del dashboard
     cargarDashboard();
@@ -25,104 +25,57 @@ function inicializarApp() {
     console.log('Aplicación inicializada correctamente');
 }
 
-// Sistema completamente nuevo de navegación por pestañas
-function configurarNavegacionDirecta() {
-    // Mapeo directo entre botones y pestañas
-    const tabs = [
-        { buttonSelector: '.tab-button:nth-child(1)', tabId: 'tab-home' },
-        { buttonSelector: '.tab-button:nth-child(2)', tabId: 'tab-nuevo' },
-        { buttonSelector: '.tab-button:nth-child(3)', tabId: 'tab-ranking' },
-        { buttonSelector: '.tab-button:nth-child(4)', tabId: 'tab-historial' },
-        { buttonSelector: '.tab-button:nth-child(5)', tabId: 'tab-participantes' }
-    ];
-    
-    // Activar la primera pestaña por defecto
-    activarPestana('tab-home');
-    
-    // Configurar cada botón
-    tabs.forEach(tab => {
-        const button = document.querySelector(tab.buttonSelector);
-        if (button) {
-            // Eliminar cualquier onclick existente
-            button.removeAttribute('onclick');
-            
-            // Añadir nuevo event listener
-            button.addEventListener('click', function(event) {
-                event.preventDefault();
-                activarPestana(tab.tabId);
+// Configuración simplificada de navegación por pestañas
+function configurarNavegacionSimple() {
+    // Simplemente asignar un onclick a cada botón de manera directa
+    document.querySelectorAll('.tab-button').forEach(button => {
+        const targetId = button.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
+        if (targetId) {
+            button.onclick = function() {
+                openTab(targetId);
                 return false;
-            });
+            };
         }
-    });
-    
-    // También configurar los enlaces del dashboard
-    const dashboardLinks = document.querySelectorAll('.dashboard-link');
-    dashboardLinks.forEach(link => {
-        link.addEventListener('click', function(event) {
-            event.preventDefault();
-            // Extraer el tabId del onclick original
-            const match = this.getAttribute('onclick')?.match(/openTab\('([^']+)'\)/);
-            if (match && match[1]) {
-                activarPestana(match[1]);
-            }
-            return false;
-        });
     });
 }
 
-// Función simplificada para activar una pestaña
-function activarPestana(tabId) {
-    console.log('Activando pestaña:', tabId);
+// Función simplificada para abrir pestañas
+function openTab(tabId) {
+    console.log('Cambiando a pestaña:', tabId);
     
-    // 1. Ocultar todas las pestañas
+    // Ocultar todas las pestañas
     document.querySelectorAll('.tab-content').forEach(tab => {
         tab.classList.remove('active');
     });
     
-    // 2. Desactivar todos los botones
+    // Desactivar todos los botones
     document.querySelectorAll('.tab-button').forEach(button => {
         button.classList.remove('active');
     });
     
-    // 3. Activar la pestaña solicitada
-    const tab = document.getElementById(tabId);
-    if (tab) {
-        tab.classList.add('active');
-    } else {
-        console.error('Pestaña no encontrada:', tabId);
-    }
-    
-    // 4. Activar el botón correspondiente
-    // Usamos una solución robusta que no depende de atributos existentes
-    const tabIndex = {
-        'tab-home': 0,
-        'tab-nuevo': 1,
-        'tab-ranking': 2,
-        'tab-historial': 3,
-        'tab-participantes': 4
-    }[tabId];
-    
-    if (tabIndex !== undefined) {
-        const buttons = document.querySelectorAll('.tab-button');
-        if (buttons[tabIndex]) {
-            buttons[tabIndex].classList.add('active');
-        }
-    }
-    
-    // 5. Acciones específicas para pestañas particulares
-    if (tabId === 'tab-historial') {
-        if (typeof cargarHistorialDirecto === 'function') {
+    // Mostrar la pestaña seleccionada
+    const tabElement = document.getElementById(tabId);
+    if (tabElement) {
+        tabElement.classList.add('active');
+        
+        // Activar el botón correspondiente (de manera simplificada)
+        document.querySelectorAll('.tab-button').forEach(button => {
+            if (button.getAttribute('onclick')?.includes(tabId)) {
+                button.classList.add('active');
+            }
+        });
+        
+        // Cargar historial específicamente cuando se abre esa pestaña
+        if (tabId === 'tab-historial') {
             cargarHistorialDirecto();
         }
+        
+        // Disparar evento cambio de pestaña
+        document.dispatchEvent(new CustomEvent('tabChanged', { detail: { tabId } }));
+    } else {
+        console.error('No se encontró el tab:', tabId);
     }
-    
-    // 6. Disparar evento de cambio de pestaña
-    document.dispatchEvent(new CustomEvent('tabChanged', { 
-        detail: { tabId: tabId } 
-    }));
 }
-
-// El resto de funciones permanecen igual...
 
 // Cargar datos para el dashboard inicial
 async function cargarDashboard() {
@@ -130,29 +83,16 @@ async function cargarDashboard() {
         // Obtener conteo de WOGs
         const wogsSnapshot = await db.collection(COLECCION_WOGS).get();
         
-        // Añadir enlace al historial con el nuevo sistema de navegación
-        const totalWogsElement = document.getElementById('total-wogs');
-        if (totalWogsElement) {
-            totalWogsElement.innerHTML = `
-                <a href="#" class="dashboard-link dashboard-historial">
-                    ${wogsSnapshot.size}
-                </a>
-            `;
-            
-            // Configurar evento para el enlace
-            document.querySelector('.dashboard-historial')?.addEventListener('click', function(event) {
-                event.preventDefault();
-                activarPestana('tab-historial');
-                return false;
-            });
-        }
+        // Añadir enlace al historial
+        document.getElementById('total-wogs').innerHTML = `
+            <a href="#" onclick="openTab('tab-historial'); return false;" class="dashboard-link">
+                ${wogsSnapshot.size}
+            </a>
+        `;
         
         // Obtener conteo de participantes
         const participantesSnapshot = await db.collection(COLECCION_PARTICIPANTES).get();
-        const totalParticipantesElement = document.getElementById('total-participantes');
-        if (totalParticipantesElement) {
-            totalParticipantesElement.textContent = participantesSnapshot.size;
-        }
+        document.getElementById('total-participantes').textContent = participantesSnapshot.size;
         
         // Calcular líder (participante con más puntos)
         if (participantesSnapshot.size > 0) {
@@ -172,20 +112,12 @@ async function cargarDashboard() {
                 }
             }
             
-            const currentLeaderElement = document.getElementById('current-leader');
-            if (currentLeaderElement && lider) {
-                currentLeaderElement.innerHTML = `
-                    <a href="#" class="dashboard-link dashboard-ranking">
+            if (lider) {
+                document.getElementById('current-leader').innerHTML = `
+                    <a href="#" onclick="openTab('tab-ranking'); return false;" class="dashboard-link">
                         ${lider}
                     </a>
                 `;
-                
-                // Configurar evento para el enlace
-                document.querySelector('.dashboard-ranking')?.addEventListener('click', function(event) {
-                    event.preventDefault();
-                    activarPestana('tab-ranking');
-                    return false;
-                });
             }
         }
         
@@ -200,11 +132,7 @@ async function cargarDashboard() {
         // Formatear fecha
         const opciones = { weekday: 'long', day: 'numeric', month: 'long' };
         const fechaFormateada = proximoMartes.toLocaleDateString('es-ES', opciones);
-        
-        const nextWogElement = document.getElementById('next-wog');
-        if (nextWogElement) {
-            nextWogElement.textContent = fechaFormateada;
-        }
+        document.getElementById('next-wog').textContent = fechaFormateada;
         
     } catch (error) {
         console.error('Error al cargar datos del dashboard:', error);
@@ -231,12 +159,6 @@ function configurarEventosGlobales() {
                 modal.style.display = 'none';
             }
         });
-        
-        // Si existe el modal de imagen a pantalla completa y se hace clic fuera
-        const imagenModal = document.querySelector('.modal.imagen-fullscreen');
-        if (imagenModal && event.target === imagenModal) {
-            imagenModal.remove();
-        }
     });
     
     // Configuración adicional para modal de notas
@@ -255,15 +177,13 @@ function configurarEventosGlobales() {
 // Mostrar un mensaje toast
 function mostrarToast(mensaje, esError = false) {
     const toast = document.getElementById('toast');
-    if (toast) {
-        toast.textContent = mensaje;
-        toast.className = esError ? 'toast show error' : 'toast show';
-        
-        // Ocultar toast después de 3 segundos
-        setTimeout(() => {
-            toast.className = toast.className.replace('show', '');
-        }, 3000);
-    }
+    toast.textContent = mensaje;
+    toast.className = esError ? 'toast show error' : 'toast show';
+    
+    // Ocultar toast después de 3 segundos
+    setTimeout(() => {
+        toast.className = toast.className.replace('show', '');
+    }, 3000);
 }
 
 // Formatear fecha para un input date
@@ -386,8 +306,8 @@ async function cargarHistorialDirecto() {
             </div>
         `;
         
-        // Obtener WOGs ordenados del más reciente al más antiguo
-        const snapshot = await db.collection('wogs').orderBy('fecha', 'desc').get();
+        // Obtener WOGs
+        const snapshot = await db.collection('wogs').get();
         console.log('Datos recibidos:', snapshot.size, 'documentos');
         
         if (snapshot.empty) {
@@ -437,32 +357,32 @@ async function cargarHistorialDirecto() {
                 comprasNombres = 'No disponible';
             }
             
-            // Preparar avatares de asistentes
-            let asistentesAvatars = '';
-            if (wog.asistentes && wog.asistentes.length > 0) {
-                // Limitar a 15 avatares como máximo para evitar sobrecarga visual
-                const asistentesLimitados = wog.asistentes.slice(0, 15);
-                const asistentesExtra = wog.asistentes.length > 15 ? wog.asistentes.length - 15 : 0;
-                
-                asistentesAvatars = `
-                    <div class="historial-detail">
-                        <div class="historial-label">Asistentes (${wog.asistentes.length})</div>
-                        <div class="historial-asistentes-avatars">
-                            ${asistentesLimitados.map(id => {
-                                const participante = participantesMap[id];
-                                if (!participante) return '';
-                                
-                                if (participante.imagen_url) {
-                                    return `<img src="${participante.imagen_url}" title="${participante.nombre}" style="width: 35px; height: 35px; border-radius: 50%; object-fit: cover; border: 1px solid #f7c59f; display: inline-block; margin: 2px;">`;
-                                } else {
-                                    return `<div style="width: 35px; height: 35px; border-radius: 50%; background-color: #ff6b35; color: white; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; margin: 2px;" title="${participante.nombre}">${obtenerIniciales(participante.nombre)}</div>`;
-                                }
-                            }).join('')}
-                            ${asistentesExtra > 0 ? `<div style="width: 35px; height: 35px; border-radius: 50%; background-color: #888; color: white; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; margin: 2px;" title="Y ${asistentesExtra} más">+${asistentesExtra}</div>` : ''}
-                        </div>
-                    </div>
-                `;
-            }
+// Preparar avatares de asistentes
+let asistentesAvatars = '';
+if (wog.asistentes && wog.asistentes.length > 0) {
+    // Limitar a 15 avatares como máximo para evitar sobrecarga visual
+    const asistentesLimitados = wog.asistentes.slice(0, 15);
+    const asistentesExtra = wog.asistentes.length > 15 ? wog.asistentes.length - 15 : 0;
+    
+    asistentesAvatars = `
+        <div class="historial-detail">
+            <div class="historial-label">Asistentes (${wog.asistentes.length})</div>
+            <div class="historial-asistentes-avatars">
+                ${asistentesLimitados.map(id => {
+                    const participante = participantesMap[id];
+                    if (!participante) return '';
+                    
+                    if (participante.imagen_url) {
+                        return `<img src="${participante.imagen_url}" title="${participante.nombre}" style="width: 25px; height: 25px; border-radius: 50%; object-fit: cover; border: 1px solid #f7c59f; display: inline-block; margin: 2px;">`;
+                    } else {
+                        return `<div style="width: 25px; height: 25px; border-radius: 50%; background-color: #ff6b35; color: white; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; margin: 2px;" title="${participante.nombre}">${obtenerIniciales(participante.nombre)}</div>`;
+                    }
+                }).join('')}
+                ${asistentesExtra > 0 ? `<div style="width: 25px; height: 25px; border-radius: 50%; background-color: #888; color: white; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; margin: 2px;" title="Y ${asistentesExtra} más">+${asistentesExtra}</div>` : ''}
+            </div>
+        </div>
+    `;
+}
             
             html += `
                 <div class="historial-item">
@@ -477,9 +397,6 @@ async function cargarHistorialDirecto() {
                                     <i class="fas fa-sticky-note"></i>
                                 </button>
                             ` : ''}
-                            <button class="historial-accion editar" onclick="editarWogDirecto('${doc.id}')">
-                                    <i class="fas fa-edit"></i>
-                                </button>
                             <button class="historial-accion eliminar" onclick="confirmarEliminarWogDirecto('${doc.id}')">
                                 <i class="fas fa-trash"></i>
                             </button>
@@ -489,7 +406,7 @@ async function cargarHistorialDirecto() {
                     <div class="historial-detalles">
                         ${wog.foto_url ? `
                             <div class="historial-imagen">
-                                <img src="${wog.foto_url}" alt="Foto del WOG" class="historial-wog-imagen" onclick="mostrarImagenCompleta('${wog.foto_url}', '${formatearFecha(fecha)}')">
+                                <img src="${wog.foto_url}" alt="Foto del WOG" class="historial-wog-imagen">
                             </div>
                         ` : ''}
                         
@@ -522,12 +439,6 @@ async function cargarHistorialDirecto() {
         });
         
         historialContainer.innerHTML = html;
-        
-        // Añadir clase de cursor pointer a las imágenes
-        document.querySelectorAll('.historial-wog-imagen').forEach(img => {
-            img.style.cursor = 'pointer';
-        });
-        
         console.log('Historial renderizado correctamente');
         
     } catch (error) {
@@ -706,256 +617,28 @@ async function eliminarWogDirecto(wogId) {
     }
 }
 
-// Función para mostrar imagen a pantalla completa
-function mostrarImagenCompleta(imgSrc, titulo) {
-    // Verificar si la imagen existe
-    if (!imgSrc) return;
+// Función para mostrar las notas de un WOG (método antiguo)
+function mostrarNotasWogDirecto(fecha, notas) {
+    const modalNotas = document.getElementById('modal-notas');
+    const tituloNotas = document.getElementById('modal-notas-titulo');
+    const contenidoNotas = document.getElementById('modal-notas-contenido');
     
-    // Crear modal
-    const modalId = 'modal-imagen-completa';
+    // Configurar título con la fecha
+    tituloNotas.textContent = `Notas del WOG - ${formatearFecha(fecha)}`;
     
-    // Eliminar modal anterior si existe
-    const modalAnterior = document.getElementById(modalId);
-    if (modalAnterior) {
-        modalAnterior.remove();
+    // Mostrar contenido o placeholder
+    if (notas && notas.trim()) {
+        contenidoNotas.textContent = notas;
+    } else {
+        contenidoNotas.innerHTML = '<div class="notas-placeholder">No hay notas registradas para este WOG.</div>';
     }
     
-    // Crear nuevo modal
-    const modal = document.createElement('div');
-    modal.id = modalId;
-    modal.className = 'modal imagen-fullscreen';
-    modal.style.display = 'block';
-    modal.style.zIndex = '1000';
-    
-    // Añadir contenido
-    modal.innerHTML = `
-        <div class="modal-content imagen-grande" style="width: 95%; max-width: 900px; background-color: #222; color: white; padding-bottom: 10px;">
-            <span class="close-modal" style="color: white;">&times;</span>
-            <h3 style="text-align: center; margin-bottom: 15px;">${titulo || 'Foto del WOG'}</h3>
-            <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 15px; overflow: hidden;">
-                <img src="${imgSrc}" alt="Foto del WOG" style="max-width: 100%; max-height: 80vh; object-fit: contain;">
-            </div>
-            <div style="text-align: center;">
-                <a href="${imgSrc}" target="_blank" class="btn" style="background-color: var(--color-primary); color: white; padding: 8px 15px; border-radius: 50px; text-decoration: none; display: inline-block;">
-                    <i class="fas fa-external-link-alt"></i> Ver imagen original
-                </a>
-            </div>
-        </div>
-    `;
-    
-    // Añadir al DOM
-    document.body.appendChild(modal);
-    
-    // Configurar cierre
-    const closeBtn = modal.querySelector('.close-modal');
-    closeBtn.addEventListener('click', () => {
-        modal.remove();
-    });
-    
-    // Cerrar al hacer Escape
-    document.addEventListener('keydown', function(event) {
-        if (event.key === 'Escape' && document.getElementById(modalId)) {
-            document.getElementById(modalId).remove();
-        }
-    });
+    // Mostrar modal
+    modalNotas.style.display = 'block';
 }
 
-// Función para editar un WOG existente
-async function editarWogDirecto(wogId) {
-    try {
-        // Obtener datos del WOG
-        const doc = await db.collection('wogs').doc(wogId).get();
-        
-        if (!doc.exists) {
-            mostrarToast('No se encontró el WOG', true);
-            return;
-        }
-        
-        const wog = doc.data();
-        console.log("Editando WOG:", wogId, wog);
-        
-        // Abrir pestaña de nuevo WOG
-        activarPestana('tab-nuevo');
-        
-        // Esperar a que se complete la carga del formulario
-        setTimeout(async () => {
-            try {
-                console.log("Estableciendo valores del formulario...");
-                
-                // Fecha: usar método más seguro para formateo
-                const fechaWog = wog.fecha.toDate();
-                const fechaFormateada = formatearFechaInput(fechaWog);
-                document.getElementById('fecha').value = fechaFormateada;
-                
-                // Sede
-                if (document.getElementById('sede')) {
-                    document.getElementById('sede').value = wog.sede || '';
-                    console.log("Sede establecida:", wog.sede);
-                }
-                
-                // Subsede
-                if (document.getElementById('subsede')) {
-                    document.getElementById('subsede').value = wog.subsede || '';
-                }
-                
-                // Compras (manejar tanto compras individuales como compartidas)
-                if (wog.comprasCompartidas && wog.comprasCompartidas.length > 0) {
-                    if (document.getElementById('compras')) {
-                        document.getElementById('compras').value = 'compartido';
-                        console.log("Compras compartidas establecidas");
-                        
-                        // Llamar a la función que muestra los checkboxes
-                        if (typeof toggleComprasCompartidas === 'function') {
-                            toggleComprasCompartidas();
-                        
-                            // Esperar a que los checkboxes estén visibles
-                            setTimeout(() => {
-                                wog.comprasCompartidas.forEach(id => {
-                                    const checkbox = document.getElementById(`compra-compartida-${id}`);
-                                    if (checkbox) {
-                                        checkbox.checked = true;
-                                        console.log("Checkbox de compra compartida marcado:", id);
-                                    } else {
-                                        console.warn("No se encontró el checkbox de compra compartida:", id);
-                                    }
-                                });
-                            }, 300);
-                        }
-                    }
-                } else if (wog.compras) {
-                    if (document.getElementById('compras')) {
-                        document.getElementById('compras').value = wog.compras;
-                        console.log("Compras individuales establecidas:", wog.compras);
-                    }
-                }
-                
-                // Asadores: primero limpiar los existentes excepto el primero
-                const asadoresContainer = document.getElementById('asadores-container');
-                if (asadoresContainer) {
-                    // Guardar el primer selector
-                    const primerSelector = asadoresContainer.querySelector('.asador-select');
-                    // Limpiar el contenedor
-                    asadoresContainer.innerHTML = '';
-                    
-                    // Si hay asadores en el WOG
-                    if (wog.asadores && wog.asadores.length > 0) {
-                        // Para cada asador en el WOG
-                        wog.asadores.forEach((asadorId, index) => {
-                            // Si es el primer asador
-                            if (index === 0) {
-                                // Crear el primer item de asador
-                                const asadorItem = document.createElement('div');
-                                asadorItem.className = 'asador-item';
-                                
-                                // Añadir el selector al item
-                                if (primerSelector) {
-                                    primerSelector.value = asadorId;
-                                    asadorItem.appendChild(primerSelector);
-                                } else {
-                                    // Si no hay primer selector, crear uno nuevo
-                                    const nuevoSelect = document.createElement('select');
-                                    nuevoSelect.className = 'asador-select';
-                                    nuevoSelect.required = true;
-                                    
-                                    // Cargar opciones desde el DOM
-                                    const participantesSnap = await db.collection('participantes').get();
-                                    nuevoSelect.innerHTML = '<option value="">Seleccionar asador</option>';
-                                    participantesSnap.docs.forEach(doc => {
-                                        const option = document.createElement('option');
-                                        option.value = doc.id;
-                                        option.textContent = doc.data().nombre;
-                                        nuevoSelect.appendChild(option);
-                                    });
-                                    
-                                    nuevoSelect.value = asadorId;
-                                    asadorItem.appendChild(nuevoSelect);
-                                }
-                                
-                                asadoresContainer.appendChild(asadorItem);
-                            } else {
-                                // Si es un asador adicional, crear nuevo selector
-                                if (typeof agregarSelectorAsador === 'function') {
-                                    agregarSelectorAsador();
-                                }
-                                
-                                // Establecer el valor del selector recién creado
-                                setTimeout(() => {
-                                    const selectores = asadoresContainer.querySelectorAll('.asador-select');
-                                    if (selectores[index]) {
-                                        selectores[index].value = asadorId;
-                                        console.log("Asador adicional establecido:", index, asadorId);
-                                    }
-                                }, 100);
-                            }
-                        });
-                    } else {
-                        // Si no hay asadores, añadir el selector vacío
-                        const asadorItem = document.createElement('div');
-                        asadorItem.className = 'asador-item';
-                        if (primerSelector) {
-                            asadorItem.appendChild(primerSelector);
-                        }
-                        asadoresContainer.appendChild(asadorItem);
-                    }
-                }
-                
-                // Asistentes
-                if (wog.asistentes && wog.asistentes.length > 0) {
-                    // Limpiar todos los checkboxes primero
-                    document.querySelectorAll('#asistentes-lista input[type="checkbox"]').forEach(cb => {
-                        cb.checked = false;
-                    });
-                    
-                    // Marcar los asistentes del WOG
-                    wog.asistentes.forEach(id => {
-                        const checkbox = document.getElementById(`asistente-${id}`);
-                        if (checkbox) {
-                            checkbox.checked = true;
-                            console.log("Asistente marcado:", id);
-                        } else {
-                            console.warn("No se encontró el checkbox de asistente:", id);
-                        }
-                    });
-                }
-                
-                // Notas
-                if (document.getElementById('notas')) {
-                    document.getElementById('notas').value = wog.notas || '';
-                }
-                
-                // Foto
-                const previewFotoWog = document.getElementById('preview-foto-wog');
-                if (previewFotoWog && wog.foto_url) {
-                    previewFotoWog.innerHTML = `<img src="${wog.foto_url}" alt="Foto del WOG">`;
-                }
-                
-                // Modificar formulario para modo edición
-                const form = document.getElementById('nuevo-wog-form');
-                if (form) {
-                    form.setAttribute('data-editing-id', wogId);
-                    
-                    const submitBtn = form.querySelector('button[type="submit"]');
-                    if (submitBtn) {
-                        submitBtn.textContent = 'Actualizar WOG';
-                    }
-                }
-                
-                mostrarToast('Editando WOG, realiza los cambios necesarios');
-                
-            } catch (innerError) {
-                console.error("Error al establecer valores del formulario:", innerError);
-                mostrarToast('Error al cargar algunos valores del formulario', true);
-            }
-        }, 500);
-        
-    } catch (error) {
-        console.error('Error al cargar WOG para editar:', error);
-        mostrarToast('Error al cargar datos del WOG', true);
-    }
-}
-
-// Exportar funciones al scope global
-window.openTab = activarPestana; // Reemplazar la antigua función
+// Exportar funciones globales a window
+window.openTab = openTab;
 window.mostrarToast = mostrarToast;
 window.formatearFecha = formatearFecha;
 window.obtenerIniciales = obtenerIniciales;
@@ -964,5 +647,3 @@ window.mostrarNotasWogDirecto = mostrarNotasWogDirecto;
 window.cargarHistorialDirecto = cargarHistorialDirecto;
 window.confirmarEliminarWogDirecto = confirmarEliminarWogDirecto;
 window.eliminarWogDirecto = eliminarWogDirecto;
-window.mostrarImagenCompleta = mostrarImagenCompleta;
-window.editarWogDirecto = editarWogDirecto;

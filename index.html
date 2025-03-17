@@ -30,14 +30,14 @@
     </header>
     
     <div class="tab-container">
-    <div class="tabs">
-        <button class="tab-button active">Inicio</button>
-        <button class="tab-button">Nuevo WOG</button>
-        <button class="tab-button">Ranking</button>
-        <button class="tab-button">Historial</button>
-        <button class="tab-button">Participantes</button>
+        <div class="tabs">
+            <button class="tab-button active" onclick="openTab('tab-home')">Inicio</button>
+            <button class="tab-button" onclick="openTab('tab-nuevo')">Nuevo WOG</button>
+            <button class="tab-button" onclick="openTab('tab-ranking')">Ranking</button>
+            <button class="tab-button" onclick="openTab('tab-historial')">Historial</button>
+            <button class="tab-button" onclick="openTab('tab-participantes')">Participantes</button>
+        </div>
     </div>
-</div>
     
     <main class="container">
         <!-- Tab: Inicio -->
@@ -248,6 +248,5 @@
     <script src="js/wog.js"></script>
     <script src="js/ranking.js"></script>
     <script src="js/historial.js"></script>
-   <script src="js/fix.js"></script>
 </body>
 </html>
