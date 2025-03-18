@@ -398,8 +398,8 @@ if (wog.asistentes && wog.asistentes.length > 0) {
                                 </button>
                             ` : ''}
                              <button class="historial-accion editar" onclick="editarWogDirecto('${doc.id}')">
-        <i class="fas fa-edit"></i>
-    </button>
+                                  <i class="fas fa-edit"></i>
+                                </button>
                             <button class="historial-accion eliminar" onclick="confirmarEliminarWogDirecto('${doc.id}')">
                                 <i class="fas fa-trash"></i>
                             </button>
@@ -615,6 +615,26 @@ async function eliminarWogDirecto(wogId) {
         btnConfirmarAccion.innerHTML = 'Eliminar';
     }
 }
+
+// Función para mostrar las notas de un WOG (método antiguo)
+function mostrarNotasWogDirecto(fecha, notas) {
+    const modalNotas = document.getElementById('modal-notas');
+    const tituloNotas = document.getElementById('modal-notas-titulo');
+    const contenidoNotas = document.getElementById('modal-notas-contenido');
+    
+    // Configurar título con la fecha
+    tituloNotas.textContent = `Notas del WOG - ${formatearFecha(fecha)}`;
+    
+    // Mostrar contenido o placeholder
+    if (notas && notas.trim()) {
+        contenidoNotas.textContent = notas;
+    } else {
+        contenidoNotas.innerHTML = '<div class="notas-placeholder">No hay notas registradas para este WOG.</div>';
+    }
+    
+    // Mostrar modal
+    modalNotas.style.display = 'block';
+}
 // Función para editar un WOG existente
 async function editarWogDirecto(wogId) {
     try {
@@ -802,28 +822,6 @@ async function editarWogDirecto(wogId) {
         mostrarToast('Error al cargar datos del WOG', true);
     }
 }
-
-
-// Función para mostrar las notas de un WOG (método antiguo)
-function mostrarNotasWogDirecto(fecha, notas) {
-    const modalNotas = document.getElementById('modal-notas');
-    const tituloNotas = document.getElementById('modal-notas-titulo');
-    const contenidoNotas = document.getElementById('modal-notas-contenido');
-    
-    // Configurar título con la fecha
-    tituloNotas.textContent = `Notas del WOG - ${formatearFecha(fecha)}`;
-    
-    // Mostrar contenido o placeholder
-    if (notas && notas.trim()) {
-        contenidoNotas.textContent = notas;
-    } else {
-        contenidoNotas.innerHTML = '<div class="notas-placeholder">No hay notas registradas para este WOG.</div>';
-    }
-    
-    // Mostrar modal
-    modalNotas.style.display = 'block';
-}
-
 // Exportar funciones globales a window
 window.openTab = openTab;
 window.mostrarToast = mostrarToast;
