@@ -616,25 +616,6 @@ async function eliminarWogDirecto(wogId) {
     }
 }
 
-// Función para mostrar las notas de un WOG (método antiguo)
-function mostrarNotasWogDirecto(fecha, notas) {
-    const modalNotas = document.getElementById('modal-notas');
-    const tituloNotas = document.getElementById('modal-notas-titulo');
-    const contenidoNotas = document.getElementById('modal-notas-contenido');
-    
-    // Configurar título con la fecha
-    tituloNotas.textContent = `Notas del WOG - ${formatearFecha(fecha)}`;
-    
-    // Mostrar contenido o placeholder
-    if (notas && notas.trim()) {
-        contenidoNotas.textContent = notas;
-    } else {
-        contenidoNotas.innerHTML = '<div class="notas-placeholder">No hay notas registradas para este WOG.</div>';
-    }
-    
-    // Mostrar modal
-    modalNotas.style.display = 'block';
-}
 // Función para editar un WOG existente
 async function editarWogDirecto(wogId) {
     try {
