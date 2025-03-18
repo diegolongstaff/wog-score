@@ -367,21 +367,19 @@ if (wog.asistentes && wog.asistentes.length > 0) {
     const asistentesExtra = wog.asistentes.length > 15 ? wog.asistentes.length - 15 : 0;
     
     asistentesAvatars = `
-        <div class="historial-detail">
-            <div class="historial-label">Asistentes (${wog.asistentes.length})</div>
-            <div class="historial-asistentes-avatars">
-                ${asistentesLimitados.map(id => {
-                    const participante = participantesMap[id];
-                    if (!participante) return '';
-                    
-                    if (participante.imagen_url) {
-                        return `<img src="${participante.imagen_url}" title="${participante.nombre}" style="width: 35px; height: 35px; border-radius: 50%; object-fit: cover; border: 1px solid #f7c59f; display: inline-block; margin: 2px;">`;
-                    } else {
-                        return `<div style="width: 35px; height: 35px; border-radius: 50%; background-color: #ff6b35; color: white; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; margin: 2px;" title="${participante.nombre}">${obtenerIniciales(participante.nombre)}</div>`;
-                    }
-                }).join('')}
-                ${asistentesExtra > 0 ? `<div style="width: 35px; height: 35px; border-radius: 50%; background-color: #888; color: white; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; margin: 2px;" title="Y ${asistentesExtra} más">+${asistentesExtra}</div>` : ''}
-            </div>
+        <div class="historial-label">Asistentes (${wog.asistentes.length})</div>
+        <div class="historial-asistentes-avatars">
+            ${asistentesLimitados.map(id => {
+                const participante = participantesMap[id];
+                if (!participante) return '';
+                
+                if (participante.imagen_url) {
+                    return `<img src="${participante.imagen_url}" title="${participante.nombre}" style="width: 33px; height: 33px; border-radius: 50%; object-fit: cover; border: 1px solid #f7c59f; display: inline-block; margin: 2px;">`;
+                } else {
+                    return `<div style="width: 33px; height: 33px; border-radius: 50%; background-color: #ff6b35; color: white; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; margin: 2px;" title="${participante.nombre}">${obtenerIniciales(participante.nombre)}</div>`;
+                }
+            }).join('')}
+            ${asistentesExtra > 0 ? `<div style="width: 33px; height: 33px; border-radius: 50%; background-color: #888; color: white; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; margin: 2px;" title="Y ${asistentesExtra} más">+${asistentesExtra}</div>` : ''}
         </div>
     `;
 }
