@@ -510,7 +510,6 @@ function confirmarEliminarWogDirecto(id) {
     // Mostrar modal
     modalConfirmacion.style.display = 'block';
 }
-
 // Eliminar un WOG directamente
 async function eliminarWogDirecto(wogId) {
     const modalConfirmacion = document.getElementById('modal-confirmacion');
@@ -617,193 +616,94 @@ async function eliminarWogDirecto(wogId) {
 }
 
 // Función para editar un WOG existente
-async function editarWogDirecto(wogId) {
-    try {
-        // Obtener datos del WOG
-        const doc = await db.collection('wogs').doc(wogId).get();
-        
-        if (!doc.exists) {
-            mostrarToast('No se encontró el WOG', true);
-            return;
-        }
-        
-        const wog = doc.data();
-        console.log("Editando WOG:", wogId, wog);
-        
-        // Abrir pestaña de nuevo WOG
-        openTab('tab-nuevo');
-        
-        // Esperar a que se complete la carga del formulario
-        setTimeout(async () => {
-            try {
-                console.log("Estableciendo valores del formulario...");
+function editarWogDirecto(wogId) {
+    openTab('tab-nuevo');
+    
+    setTimeout(function() {
+        db.collection('wogs').doc(wogId).get().then(function(doc) {
+            if (doc.exists) {
+                var wog = doc.data();
                 
-                // Fecha: usar método más seguro para formateo
-                const fechaWog = wog.fecha.toDate();
-                const fechaFormateada = formatearFechaInput(fechaWog);
-                document.getElementById('fecha').value = fechaFormateada;
-                
-                // Sede
-                if (document.getElementById('sede')) {
-                    document.getElementById('sede').value = wog.sede || '';
-                    console.log("Sede establecida:", wog.sede);
+                // Establecer fecha
+                if (wog.fecha) {
+                    document.getElementById('fecha').value = formatearFechaInput(wog.fecha.toDate());
                 }
                 
-                // Subsede
-                if (document.getElementById('subsede')) {
-                    document.getElementById('subsede').value = wog.subsede || '';
-                }
+                // Establecer sede y subsede
+                if (wog.sede) document.getElementById('sede').value = wog.sede;
+                if (wog.subsede) document.getElementById('subsede').value = wog.subsede;
                 
-                // Compras (manejar tanto compras individuales como compartidas)
-                if (wog.comprasCompartidas && wog.comprasCompartidas.length > 0) {
-                    if (document.getElementById('compras')) {
-                        document.getElementById('compras').value = 'compartido';
-                        console.log("Compras compartidas establecidas");
-                        
-                        // Llamar a la función que muestra los checkboxes
-                        if (typeof toggleComprasCompartidas === 'function') {
-                            toggleComprasCompartidas();
-                        
-                            // Esperar a que los checkboxes estén visibles
-                            setTimeout(() => {
-                                wog.comprasCompartidas.forEach(id => {
-                                    const checkbox = document.getElementById(`compra-compartida-${id}`);
-                                    if (checkbox) {
-                                        checkbox.checked = true;
-                                        console.log("Checkbox de compra compartida marcado:", id);
-                                    } else {
-                                        console.warn("No se encontró el checkbox de compra compartida:", id);
-                                    }
-                                });
-                            }, 300);
-                        }
-                    }
-                } else if (wog.compras) {
-                    if (document.getElementById('compras')) {
-                        document.getElementById('compras').value = wog.compras;
-                        console.log("Compras individuales establecidas:", wog.compras);
-                    }
-                }
-                
-                // Asadores: primero limpiar los existentes excepto el primero
-                const asadoresContainer = document.getElementById('asadores-container');
-                if (asadoresContainer) {
-                    // Guardar el primer selector
-                    const primerSelector = asadoresContainer.querySelector('.asador-select');
-                    // Limpiar el contenedor
-                    asadoresContainer.innerHTML = '';
+                // Compras
+                if (wog.compras) {
+                    document.getElementById('compras').value = wog.compras;
+                } else if (wog.comprasCompartidas && wog.comprasCompartidas.length > 0) {
+                    document.getElementById('compras').value = 'compartido';
+                    toggleComprasCompartidas();
                     
-                    // Si hay asadores en el WOG
-                    if (wog.asadores && wog.asadores.length > 0) {
-                        // Para cada asador en el WOG
-                        wog.asadores.forEach((asadorId, index) => {
-                            // Si es el primer asador
-                            if (index === 0) {
-                                // Crear el primer item de asador
-                                const asadorItem = document.createElement('div');
-                                asadorItem.className = 'asador-item';
-                                
-                                // Añadir el selector al item
-                                if (primerSelector) {
-                                    primerSelector.value = asadorId;
-                                    asadorItem.appendChild(primerSelector);
-                                } else {
-                                    // Si no hay primer selector, crear uno nuevo
-                                    const nuevoSelect = document.createElement('select');
-                                    nuevoSelect.className = 'asador-select';
-                                    nuevoSelect.required = true;
-
-                                            setTimeout(async () => {
-
-                                    // Cargar opciones desde el DOM
-                                    const participantesSnap = await db.collection('participantes').get();
-                                    nuevoSelect.innerHTML = '<option value="">Seleccionar asador</option>';
-                                    participantesSnap.docs.forEach(doc => {
-                                        const option = document.createElement('option');
-                                        option.value = doc.id;
-                                        option.textContent = doc.data().nombre;
-                                        nuevoSelect.appendChild(option);
-                                    });
-                                    
-                                    nuevoSelect.value = asadorId;
-                                    asadorItem.appendChild(nuevoSelect);
-                                
-                                
-                                asadoresContainer.appendChild(asadorItem);
-                            } else {
-                                // Si es un asador adicional, crear nuevo selector
-                                if (typeof agregarSelectorAsador === 'function') {
-                                    agregarSelectorAsador();
-                              
-                                
-                                // Establecer el valor del selector recién creado
-                                setTimeout(() => {
-                                    const selectores = asadoresContainer.querySelectorAll('.asador-select');
-                                    if (selectores[index]) {
-                                        selectores[index].value = asadorId;
-                                        console.log("Asador adicional establecido:", index, asadorId);
-                                    }
-                                }, 100);
+                    // Marcar checkboxes
+                    setTimeout(function() {
+                        wog.comprasCompartidas.forEach(function(id) {
+                            var checkbox = document.getElementById('compra-compartida-' + id);
+                            if (checkbox) checkbox.checked = true;
+                        });
+                    }, 300);
+                }
+                
+                // Asadores
+                if (wog.asadores && wog.asadores.length > 0) {
+                    var asadoresContainer = document.getElementById('asadores-container');
+                    
+                    // Limpiar contenedor excepto el primer elemento
+                    while (asadoresContainer.children.length > 1) {
+                        asadoresContainer.removeChild(asadoresContainer.lastChild);
+                    }
+                    
+                    // Establecer primer asador
+                    var primerSelector = asadoresContainer.querySelector('.asador-select');
+                    if (primerSelector) primerSelector.value = wog.asadores[0];
+                    
+                    // Añadir asadores adicionales
+                    for (var i = 1; i < wog.asadores.length; i++) {
+                        agregarSelectorAsador();
+                    }
+                    
+                    // Establecer valores para asadores adicionales
+                    setTimeout(function() {
+                        var selectores = asadoresContainer.querySelectorAll('.asador-select');
+                        wog.asadores.forEach(function(id, index) {
+                            if (index > 0 && selectores[index]) {
+                                selectores[index].value = id;
                             }
                         });
-                    } else {
-                        // Si no hay asadores, añadir el selector vacío
-                        const asadorItem = document.createElement('div');
-                        asadorItem.className = 'asador-item';
-                        if (primerSelector) {
-                            asadorItem.appendChild(primerSelector);
-                        }
-                        asadoresContainer.appendChild(asadorItem);
-                    }
+                    }, 200);
                 }
                 
                 // Asistentes
                 if (wog.asistentes && wog.asistentes.length > 0) {
-                    // Limpiar todos los checkboxes primero
-                    document.querySelectorAll('#asistentes-lista input[type="checkbox"]').forEach(cb => {
-                        cb.checked = false;
-                    });
-                    
-                    // Marcar los asistentes del WOG
-                    wog.asistentes.forEach(id => {
-                        const checkbox = document.getElementById(`asistente-${id}`);
-                        if (checkbox) {
-                            checkbox.checked = true;
-                            console.log("Asistente marcado:", id);
-                        } else {
-                            console.warn("No se encontró el checkbox de asistente:", id);
-                        }
+                    document.querySelectorAll('#asistentes-lista input[type="checkbox"]').forEach(function(cb) {
+                        cb.checked = wog.asistentes.includes(cb.value);
                     });
                 }
                 
                 // Notas
-                if (document.getElementById('notas')) {
-                    document.getElementById('notas').value = wog.notas || '';
-                }
+                if (wog.notas) document.getElementById('notas').value = wog.notas;
                 
-                // Modificar formulario para modo edición
-                const form = document.getElementById('nuevo-wog-form');
-                if (form) {
-                    form.setAttribute('data-editing-id', wogId);
-                    
-                    const submitBtn = form.querySelector('button[type="submit"]');
-                    if (submitBtn) {
-                        submitBtn.textContent = 'Actualizar WOG';
-                    }
-                }
+                // Marcar formulario como edición
+                document.getElementById('nuevo-wog-form').setAttribute('data-editing-id', wogId);
+                
+                // Cambiar texto del botón
+                var submitBtn = document.querySelector('#nuevo-wog-form button[type="submit"]');
+                if (submitBtn) submitBtn.textContent = 'Actualizar WOG';
                 
                 mostrarToast('Editando WOG, realiza los cambios necesarios');
-                
-            } catch (innerError) {
-                console.error("Error al establecer valores del formulario:", innerError);
-                mostrarToast('Error al cargar algunos valores del formulario', true);
+            } else {
+                mostrarToast('No se encontró el WOG', true);
             }
-        }, 500);
-        
-    } catch (error) {
-        console.error('Error al cargar WOG para editar:', error);
-        mostrarToast('Error al cargar datos del WOG', true);
-    }
+        }).catch(function(error) {
+            console.error('Error cargando WOG:', error);
+            mostrarToast('Error al cargar datos del WOG', true);
+        });
+    }, 500);
 }
 // Exportar funciones globales a window
 window.openTab = openTab;
