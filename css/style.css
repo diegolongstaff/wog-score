@@ -658,7 +658,16 @@ body {
         margin: 20% auto;
         padding: 20px;
     }
+     /* Add this new code */
+    .historial-info {
+        grid-template-columns: 1fr;  /* Change to single column */
+        gap: 10px;  /* Reduce gap slightly */
+    }
     
+    .grid-span-full {
+        grid-column: 1;  /* Only one column to span */
+    }
+}
     .historial-detalles {
         grid-template-columns: 1fr;
     }
@@ -708,7 +717,22 @@ body {
         flex-direction: column;
         gap: 5px;
     }
-}color-background);
+    .historial-info {
+        gap: 8px;  /* Further reduce gap for very small screens */
+    }
+    
+    .historial-detail {
+        padding: 8px;  /* Reduce padding if needed */
+    }
+    /* Make avatar images slightly smaller on very small screens */
+    .historial-asistentes-avatars img,
+    .historial-asistentes-avatars div {
+        width: 28px !important;  /* Override inline styles */
+        height: 28px !important;  /* Override inline styles */
+        margin: 1px !important;  /* Override inline styles */
+    }
+}
+color-background);
     line-height: 1.6;
     position: relative;
     min-height: 100vh;
