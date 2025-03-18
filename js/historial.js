@@ -6,7 +6,7 @@ const modalConfirmacionHistorial = document.getElementById('modal-confirmacion')
 const modalConfirmacionTituloHistorial = document.getElementById('modal-confirmacion-titulo');
 const modalConfirmacionMensajeHistorial = document.getElementById('modal-confirmacion-mensaje');
 const btnConfirmarAccionHistorial = document.getElementById('btn-confirmar-accion'); // Renamed to avoid conflict
-const btnCancelarConfirmacion = document.getElementById('btn-cancelar-confirmacion');
+const btnCancelarConfirmacionHistorial = document.getElementById('btn-cancelar-confirmacion');
 const modalNotas = document.getElementById('modal-notas');
 const modalNotasTitulo = document.getElementById('modal-notas-titulo');
 const modalNotasContenido = document.getElementById('modal-notas-contenido');
@@ -30,8 +30,8 @@ function initHistorialModule() {
     });
     
     // Configurar botones de modales
-    if (btnCancelarConfirmacion) {
-        btnCancelarConfirmacion.addEventListener('click', function() {
+    if (btnCancelarConfirmacionHistorial) {
+        btnCancelarConfirmacionHistorial.addEventListener('click', function() {
             modalConfirmacionHistorial.style.display = 'none';
         });
     }
