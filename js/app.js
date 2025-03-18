@@ -200,7 +200,7 @@ function crearAvatar(participante, tamaño = 'md') {
     
     if (participante.imagen_url) {
         const img = document.createElement('img');
-        img.src = participante.imagen_url;
+        img.src = participanter.imagen_url;
         img.alt = participante.nombre;
         avatar.appendChild(img);
     } else {
@@ -475,4 +475,22 @@ function confirmarEliminarWogDirecto(id) {
 // Eliminar un WOG directamente
 async function eliminarWogDirecto(wogId) {
     const modalConfirmacion = document.getElementById('modal-confirmacion');
-    const
+    const btnConfirmarAccion = document.getElementById('btn-confirmar-accion');
+    
+    try {
+        btnConfirmarAccion.disabled = true;
+        btnConfirmarAccion.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Eliminando...';
+        
+        const docRef = db.collection('wogs').doc(wogId);
+        const doc = await docRef.get();
+        
+        if (!doc.exists) {
+            throw new Error('No se encontró el WOG');
+        }
+        
+        const wog = doc.data();
+        
+        await db.runTransaction(async transaction => {
+            if (wog.sede) {
+                const sedeRef = db.collection('participantes').doc(wog.sede);
+                const sedeDoc = await transaction.get
