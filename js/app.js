@@ -746,7 +746,7 @@ async function editarWogDirecto(wogId) {
                                     
                                     nuevoSelect.value = asadorId;
                                     asadorItem.appendChild(nuevoSelect);
-                                }
+                                
                                 
                                 asadoresContainer.appendChild(asadorItem);
                             } else {
