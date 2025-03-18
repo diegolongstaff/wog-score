@@ -663,7 +663,17 @@ body {
         grid-template-columns: 1fr;
     }
 }
-
+@media (max-width: 576px) {
+    .historial-row {
+        flex-direction: column;
+    }
+    
+    .historial-detail-half {
+        flex: 0 0 100%;
+        margin-right: 0;
+        margin-bottom: 15px;
+    }
+}
 @media (max-width: 480px) {
     .retro-header h1 {
         font-size: 2rem;
