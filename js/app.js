@@ -731,7 +731,9 @@ async function editarWogDirecto(wogId) {
                                     const nuevoSelect = document.createElement('select');
                                     nuevoSelect.className = 'asador-select';
                                     nuevoSelect.required = true;
-                                    
+
+                                            setTimeout(async () => {
+
                                     // Cargar opciones desde el DOM
                                     const participantesSnap = await db.collection('participantes').get();
                                     nuevoSelect.innerHTML = '<option value="">Seleccionar asador</option>';
