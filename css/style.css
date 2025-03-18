@@ -171,17 +171,7 @@ body {
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 15px;
 }
-/* New styles for historial layout */
-.historial-row {
-    display: flex;
-    width: 100%;
-    margin-bottom: 15px;
-}
 
-.historial-detail-half {
-    flex: 0 0 48%;
-    margin-right: 2%;
-}
 .historial-detail {
     display: flex;
     flex-direction: column;
@@ -225,9 +215,7 @@ body {
     margin-right: 5px;
     object-fit: cover;
 }
-.grid-span-full {
-    grid-column: 1 / -1; /* This makes the element span all columns */
-}
+
 /* Grid de participantes */
 .participantes-grid {
     display: grid;
@@ -658,31 +646,12 @@ body {
         margin: 20% auto;
         padding: 20px;
     }
-     /* Add this new code */
-    .historial-info {
-        grid-template-columns: 1fr;  /* Change to single column */
-        gap: 10px;  /* Reduce gap slightly */
-    }
     
-    .grid-span-full {
-        grid-column: 1;  /* Only one column to span */
-    }
-}
     .historial-detalles {
         grid-template-columns: 1fr;
     }
 }
-@media (max-width: 576px) {
-    .historial-row {
-        flex-direction: column;
-    }
-    
-    .historial-detail-half {
-        flex: 0 0 100%;
-        margin-right: 0;
-        margin-bottom: 15px;
-    }
-}
+
 @media (max-width: 480px) {
     .retro-header h1 {
         font-size: 2rem;
@@ -717,22 +686,7 @@ body {
         flex-direction: column;
         gap: 5px;
     }
-    .historial-info {
-        gap: 8px;  /* Further reduce gap for very small screens */
-    }
-    
-    .historial-detail {
-        padding: 8px;  /* Reduce padding if needed */
-    }
-    /* Make avatar images slightly smaller on very small screens */
-    .historial-asistentes-avatars img,
-    .historial-asistentes-avatars div {
-        width: 28px !important;  /* Override inline styles */
-        height: 28px !important;  /* Override inline styles */
-        margin: 1px !important;  /* Override inline styles */
-    }
-}
-color-background);
+}color-background);
     line-height: 1.6;
     position: relative;
     min-height: 100vh;
@@ -1239,7 +1193,7 @@ input[type="file"] {
 .historial-info {
     flex: 1;
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 15px;
 }
 

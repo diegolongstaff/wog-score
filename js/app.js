@@ -367,19 +367,21 @@ if (wog.asistentes && wog.asistentes.length > 0) {
     const asistentesExtra = wog.asistentes.length > 15 ? wog.asistentes.length - 15 : 0;
     
     asistentesAvatars = `
-        <div class="historial-label">Asistentes (${wog.asistentes.length})</div>
-        <div class="historial-asistentes-avatars">
-            ${asistentesLimitados.map(id => {
-                const participante = participantesMap[id];
-                if (!participante) return '';
-                
-                if (participante.imagen_url) {
-                    return `<img src="${participante.imagen_url}" title="${participante.nombre}" style="width: 33px; height: 33px; border-radius: 50%; object-fit: cover; border: 1px solid #f7c59f; display: inline-block; margin: 2px;">`;
-                } else {
-                    return `<div style="width: 33px; height: 33px; border-radius: 50%; background-color: #ff6b35; color: white; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; margin: 2px;" title="${participante.nombre}">${obtenerIniciales(participante.nombre)}</div>`;
-                }
-            }).join('')}
-            ${asistentesExtra > 0 ? `<div style="width: 33px; height: 33px; border-radius: 50%; background-color: #888; color: white; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; margin: 2px;" title="Y ${asistentesExtra} más">+${asistentesExtra}</div>` : ''}
+        <div class="historial-detail">
+            <div class="historial-label">Asistentes (${wog.asistentes.length})</div>
+            <div class="historial-asistentes-avatars">
+                ${asistentesLimitados.map(id => {
+                    const participante = participantesMap[id];
+                    if (!participante) return '';
+                    
+                    if (participante.imagen_url) {
+                        return `<img src="${participante.imagen_url}" title="${participante.nombre}" style="width: 25px; height: 25px; border-radius: 50%; object-fit: cover; border: 1px solid #f7c59f; display: inline-block; margin: 2px;">`;
+                    } else {
+                        return `<div style="width: 25px; height: 25px; border-radius: 50%; background-color: #ff6b35; color: white; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; margin: 2px;" title="${participante.nombre}">${obtenerIniciales(participante.nombre)}</div>`;
+                    }
+                }).join('')}
+                ${asistentesExtra > 0 ? `<div style="width: 25px; height: 25px; border-radius: 50%; background-color: #888; color: white; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; margin: 2px;" title="Y ${asistentesExtra} más">+${asistentesExtra}</div>` : ''}
+            </div>
         </div>
     `;
 }
@@ -406,44 +408,35 @@ if (wog.asistentes && wog.asistentes.length > 0) {
                         </div>
                     </div>
                     
-                    html += `
-    <div class="historial-item">
-        <div class="historial-header">
-            ...
-        </div>
-        
-        <div class="historial-detalles">
-            <div class="historial-info">
-                <!-- First row: Sede and Subsede side by side -->
-                <div class="historial-detail">
-                    <div class="historial-label">Sede</div>
-                    <div class="historial-value">${sedeInfo.nombre}</div>
+                    <div class="historial-detalles">
+                        
+                        
+                        <div class="historial-info">
+                            <div class="historial-detail">
+                                <div class="historial-label">Sede</div>
+                                <div class="historial-value">${sedeInfo.nombre}</div>
+                            </div>
+                            
+                            <div class="historial-detail">
+                                <div class="historial-label">Subsede</div>
+                                <div class="historial-value">${wog.subsede || '-'}</div>
+                            </div>
+                            
+                            <div class="historial-detail">
+                                <div class="historial-label">Compras</div>
+                                <div class="historial-value">${comprasNombres}</div>
+                            </div>
+                            
+                            <div class="historial-detail">
+                                <div class="historial-label">Asador</div>
+                                <div class="historial-value">${asadoresNombres}</div>
+                            </div>
+                            
+                            ${asistentesAvatars}
+                        </div>
+                    </div>
                 </div>
-                
-                <div class="historial-detail">
-                    <div class="historial-label">Subsede</div>
-                    <div class="historial-value">${wog.subsede || '-'}</div>
-                </div>
-                
-                <!-- Second row: Compras and Asador side by side -->
-                <div class="historial-detail">
-                    <div class="historial-label">Compras</div>
-                    <div class="historial-value">${comprasNombres}</div>
-                </div>
-                
-                <div class="historial-detail">
-                    <div class="historial-label">Asador</div>
-                    <div class="historial-value">${asadoresNombres}</div>
-                </div>
-                
-                <!-- The asistentes will span both columns -->
-                <div class="historial-detail grid-span-full">
-                    ${asistentesAvatars}
-                </div>
-            </div>
-        </div>
-    </div>
-`;
+            `;
         });
         
         historialContainer.innerHTML = html;
