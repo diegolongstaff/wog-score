@@ -4,7 +4,7 @@
 const historialContainer = document.getElementById('historial-container');
 const modalConfirmacionHistorial = document.getElementById('modal-confirmacion');
 const modalConfirmacionTituloHistorial = document.getElementById('modal-confirmacion-titulo');
-const modalConfirmacionMensaje = document.getElementById('modal-confirmacion-mensaje');
+const modalConfirmacionMensajeHistorial = document.getElementById('modal-confirmacion-mensaje');
 const btnConfirmarAccion = document.getElementById('btn-confirmar-accion');
 const btnCancelarConfirmacion = document.getElementById('btn-cancelar-confirmacion');
 const modalNotas = document.getElementById('modal-notas');
@@ -176,7 +176,7 @@ function confirmarEliminarWogSimple(id) {
     
     // Configurar modal de confirmación
     modalConfirmacionTituloHistorial.textContent = 'Eliminar WOG';
-    modalConfirmacionMensaje.innerHTML = `
+    modalConfirmacionMensajeHistorial.innerHTML = `
         <p>¿Estás seguro de que deseas eliminar este WOG?</p>
         <p>Esta acción no se puede deshacer.</p>
     `;
