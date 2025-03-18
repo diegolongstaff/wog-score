@@ -225,7 +225,9 @@ body {
     margin-right: 5px;
     object-fit: cover;
 }
-
+.grid-span-full {
+    grid-column: 1 / -1; /* This makes the element span all columns */
+}
 /* Grid de participantes */
 .participantes-grid {
     display: grid;
