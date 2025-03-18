@@ -408,39 +408,44 @@ if (wog.asistentes && wog.asistentes.length > 0) {
                         </div>
                     </div>
                     
-                    <div class="historial-detalles">
-                        
-                        
-                        <div class="historial-info">
-    <div class="historial-row">
-        <div class="historial-detail historial-detail-half">
-            <div class="historial-label">Sede</div>
-            <div class="historial-value">${sedeInfo.nombre}</div>
+                    html += `
+    <div class="historial-item">
+        <div class="historial-header">
+            ...
         </div>
         
-        <div class="historial-detail historial-detail-half">
-            <div class="historial-label">Subsede</div>
-            <div class="historial-value">${wog.subsede || '-'}</div>
-        </div>
-    </div>
-    
-    <div class="historial-row">
-        <div class="historial-detail historial-detail-half">
-            <div class="historial-label">Compras</div>
-            <div class="historial-value">${comprasNombres}</div>
-        </div>
-        
-        <div class="historial-detail historial-detail-half">
-            <div class="historial-label">Asador</div>
-            <div class="historial-value">${asadoresNombres}</div>
-        </div>
-    </div>
-    
-    ${asistentesAvatars}
-</div>
-                    </div>
+        <div class="historial-detalles">
+            <div class="historial-info">
+                <!-- First row: Sede and Subsede side by side -->
+                <div class="historial-detail">
+                    <div class="historial-label">Sede</div>
+                    <div class="historial-value">${sedeInfo.nombre}</div>
                 </div>
-            `;
+                
+                <div class="historial-detail">
+                    <div class="historial-label">Subsede</div>
+                    <div class="historial-value">${wog.subsede || '-'}</div>
+                </div>
+                
+                <!-- Second row: Compras and Asador side by side -->
+                <div class="historial-detail">
+                    <div class="historial-label">Compras</div>
+                    <div class="historial-value">${comprasNombres}</div>
+                </div>
+                
+                <div class="historial-detail">
+                    <div class="historial-label">Asador</div>
+                    <div class="historial-value">${asadoresNombres}</div>
+                </div>
+                
+                <!-- The asistentes will span both columns -->
+                <div class="historial-detail grid-span-full">
+                    ${asistentesAvatars}
+                </div>
+            </div>
+        </div>
+    </div>
+`;
         });
         
         historialContainer.innerHTML = html;
