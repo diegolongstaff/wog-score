@@ -306,9 +306,11 @@ async function cargarHistorialDirecto() {
             </div>
         `;
         
-        // Obtener WOGs
-        const snapshot = await db.collection('wogs').get();
-        console.log('Datos recibidos:', snapshot.size, 'documentos');
+       // Obtener WOGs ordenados por fecha (más recientes primero)
+const snapshot = await db.collection('wogs')
+    .orderBy('fecha', 'desc')
+    .get();
+console.log('Datos recibidos:', snapshot.size, 'documentos');
         
         if (snapshot.empty) {
             historialContainer.innerHTML = `
