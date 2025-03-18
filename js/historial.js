@@ -5,7 +5,7 @@ const historialContainer = document.getElementById('historial-container');
 const modalConfirmacionHistorial = document.getElementById('modal-confirmacion');
 const modalConfirmacionTituloHistorial = document.getElementById('modal-confirmacion-titulo');
 const modalConfirmacionMensajeHistorial = document.getElementById('modal-confirmacion-mensaje');
-const btnConfirmarAccion = document.getElementById('btn-confirmar-accion');
+const btnConfirmarAccionHistorial = document.getElementById('btn-confirmar-accion'); // Renamed to avoid conflict
 const btnCancelarConfirmacion = document.getElementById('btn-cancelar-confirmacion');
 const modalNotas = document.getElementById('modal-notas');
 const modalNotasTitulo = document.getElementById('modal-notas-titulo');
@@ -182,9 +182,9 @@ function confirmarEliminarWogSimple(id) {
     `;
     
     // Configurar botón de confirmación
-    btnConfirmarAccion.textContent = 'Eliminar';
-    btnConfirmarAccion.className = 'btn btn-danger';
-    btnConfirmarAccion.onclick = eliminarWogSimple;
+    btnConfirmarAccionHistorial.textContent = 'Eliminar';
+    btnConfirmarAccionHistorial.className = 'btn btn-danger';
+    btnConfirmarAccionHistorial.onclick = eliminarWogSimple;
     
     // Mostrar modal
     modalConfirmacionHistorial.style.display = 'block';
@@ -196,8 +196,8 @@ async function eliminarWogSimple() {
     
     try {
         // Cambiar botón a estado de carga
-        btnConfirmarAccion.disabled = true;
-        btnConfirmarAccion.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Eliminando...';
+        btnConfirmarAccionHistorial.disabled = true;
+        btnConfirmarAccionHistorial.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Eliminando...';
         
         // Eliminar directamente
         await db.collection('wogs').doc(wogAEliminar).delete();
@@ -216,8 +216,8 @@ async function eliminarWogSimple() {
         mostrarToast('Error al eliminar WOG: ' + error.message, true);
     } finally {
         // Restaurar botón
-        btnConfirmarAccion.disabled = false;
-        btnConfirmarAccion.innerHTML = 'Eliminar';
+        btnConfirmarAccionHistorial.disabled = false;
+        btnConfirmarAccionHistorial.innerHTML = 'Eliminar';
         
         // Limpiar variable
         wogAEliminar = null;
