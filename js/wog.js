@@ -12,8 +12,7 @@ const asadoresContainer = document.getElementById('asadores-container');
 const asistentesLista = document.getElementById('asistentes-lista');
 const notasInput = document.getElementById('notas');
 const btnAddAsador = document.getElementById('add-asador');
-const fotoWogInput = document.getElementById('foto-wog');
-const previewFotoWog = document.getElementById('preview-foto-wog');
+
 
 // Inicializar módulo
 function initWogModule() {
@@ -27,7 +26,7 @@ function initWogModule() {
     formNuevoWog.addEventListener('submit', guardarWog);
     comprasSelect.addEventListener('change', toggleComprasCompartidas);
     btnAddAsador.addEventListener('click', agregarSelectorAsador);
-    fotoWogInput.addEventListener('change', previsualizarFotoWog);
+    
     
     // Escuchar eventos de cambio de pestaña
     document.addEventListener('tabChanged', ({ detail }) => {
@@ -128,33 +127,7 @@ function toggleComprasCompartidas() {
         comprasCompartidasDiv.style.display = 'none';
     }
 }
-// Previsualizar foto del WOG seleccionada
-function previsualizarFotoWog(event) {
-    const file = event.target.files[0];
-    if (!file) {
-        previewFotoWog.innerHTML = '';
-        return;
-    }
-    
-    // Validar que sea una imagen
-    if (!file.type.match('image.*')) {
-        mostrarToast('Por favor selecciona una imagen válida (JPG, PNG, GIF)', true);
-        return;
-    }
-    
-    // Crear elemento de imagen para previsualización
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        previewFotoWog.innerHTML = '';
-        const img = document.createElement('img');
-        img.src = e.target.result;
-        img.alt = 'Vista previa';
-        previewFotoWog.appendChild(img);
-    };
-    reader.readAsDataURL(file);
-    
-    console.log('Archivo de WOG seleccionado:', file.name, 'Tamaño:', (file.size/1024).toFixed(2), 'KB');
-}
+
 // Agregar un selector de asador adicional
 function agregarSelectorAsador() {
     // Crear contenedor para el nuevo selector
@@ -255,61 +228,7 @@ const wogData = {
     fecha_creacion: firebase.firestore.FieldValue.serverTimestamp()
 };
 
-// Manejar foto del WOG si se seleccionó una
-const fotoFile = fotoWogInput.files[0];
-if (fotoFile) {
-    try {
-        // Mostrar mensaje sobre la subida
-        mostrarToast('Subiendo foto del WOG, esto puede tardar unos segundos...');
-        
-        // Comprimir imagen si es muy grande
-        let fileToUpload = fotoFile;
-        if (fotoFile.size > 1000000) { // Si es mayor a 1MB
-            try {
-                fileToUpload = await comprimirImagen(fotoFile);
-                console.log('Foto del WOG comprimida correctamente');
-            } catch (compressError) {
-                console.error('Error al comprimir foto:', compressError);
-            }
-        }
-        
-        // Generar nombre único para el archivo
-        const extension = fotoFile.name.split('.').pop();
-        const nombreArchivo = `wog_${Date.now()}`;
-        const rutaArchivo = `wogs/${nombreArchivo}.${extension}`;
-        
-        // Crear referencia al archivo
-        const fileRef = storage.ref(rutaArchivo);
-        
-        // Subir archivo con control de progreso
-        const uploadTask = fileRef.put(fileToUpload);
-        
-        // Monitor de progreso
-        uploadTask.on('state_changed',
-            // Progreso
-            (snapshot) => {
-                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                console.log('Progreso de subida de foto WOG: ' + progress.toFixed(0) + '%');
-            },
-            // Error
-            (error) => {
-                console.error('Error al subir foto a Storage:', error);
-                throw error;
-            }
-        );
-        
-        // Esperar a que se complete la subida
-        await uploadTask;
-        
-        // Obtener URL de descarga
-        const downloadURL = await fileRef.getDownloadURL();
-        wogData.foto_url = downloadURL;
-        
-    } catch (imgError) {
-        console.error('Error procesando foto del WOG:', imgError);
-        mostrarToast('Error al procesar la foto, continuando sin foto', true);
-    }
-}
+
         
         // Manejar compras (normal o compartidas)
         if (comprasSelect.value === 'compartido') {
