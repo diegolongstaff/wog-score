@@ -158,11 +158,15 @@ function agregarSelectorAsador() {
     asadoresContainer.appendChild(asadorItem);
 }
 
-// Guardar un nuevo WOG
+// Guardar un nuevo WOG o actualizar uno existente
 async function guardarWog(event) {
     event.preventDefault();
     
     try {
+        // Verificar si estamos editando un WOG existente
+        const wogId = formNuevoWog.getAttribute('data-editing-id');
+        const isEditing = !!wogId;
+        
         // Recopilar datos del formulario
         const fecha = fechaInput.value;
         const sede = sedeSelect.value;
@@ -214,21 +218,47 @@ async function guardarWog(event) {
             if (!asistentes.includes(asador)) {
                 asistentes.push(asador);
             }
-            
         });
         
+        // Crear fecha sin problemas de zona horaria
+        const fechaInputValue = fecha; // Guarda el valor original
+        let fechaCorrecta;
+
+        try {
+          // Método 1: Usando las partes de la fecha con hora fija
+          const fechaPartes = fechaInputValue.split('-').map(part => parseInt(part, 10));
+          fechaCorrecta = new Date(fechaPartes[0], fechaPartes[1] - 1, fechaPartes[2], 12, 0, 0);
+          
+          // Verificar que no haya cambiado el día
+          if (fechaCorrecta.getDate() !== fechaPartes[2]) {
+            // Método 2: Alternativa con string ISO
+            fechaCorrecta = new Date(`${fechaInputValue}T12:00:00`);
+          }
+        } catch (e) {
+          console.error("Error creando fecha:", e);
+          // Método de respaldo
+          fechaCorrecta = new Date(new Date(fechaInputValue).setHours(12, 0, 0, 0));
+        }
+
+        console.log("Fecha original:", fechaInputValue, "Fecha convertida:", fechaCorrecta);
+        
         // Preparar objeto WOG
-const wogData = {
-    fecha: firebase.firestore.Timestamp.fromDate(new Date(fecha)),
-    sede,
-    subsede,
-    asadores,
-    asistentes,
-    notas,
-    fecha_creacion: firebase.firestore.FieldValue.serverTimestamp()
-};
-
-
+        const wogData = {
+            fecha: firebase.firestore.Timestamp.fromDate(fechaCorrecta),
+            sede,
+            subsede,
+            asadores,
+            asistentes,
+            notas,
+        };
+        
+        // Si es un nuevo WOG, añadir fecha de creación
+        if (!isEditing) {
+            wogData.fecha_creacion = firebase.firestore.FieldValue.serverTimestamp();
+        } else {
+            // Si es edición, añadir fecha de actualización
+            wogData.fecha_actualizacion = firebase.firestore.FieldValue.serverTimestamp();
+        }
         
         // Manejar compras (normal o compartidas)
         if (comprasSelect.value === 'compartido') {
@@ -249,12 +279,22 @@ const wogData = {
             }
             
             wogData.comprasCompartidas = comprasCompartidas;
+            
+            // Asegurarse de eliminar el campo compras si existe
+            if (isEditing) {
+                wogData.compras = firebase.firestore.FieldValue.delete();
+            }
         } else if (comprasSelect.value) {
             wogData.compras = comprasSelect.value;
             
             // Asegurar que esté en la lista de asistentes
             if (!asistentes.includes(comprasSelect.value)) {
                 asistentes.push(comprasSelect.value);
+            }
+            
+            // Asegurarse de eliminar el campo comprasCompartidas si existe
+            if (isEditing) {
+                wogData.comprasCompartidas = firebase.firestore.FieldValue.delete();
             }
         } else {
             mostrarToast('Debes seleccionar quién hizo las compras', true);
@@ -267,20 +307,207 @@ const wogData = {
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
         
-        // Guardar en Firestore
-        await db.collection(COLECCION_WOGS).add(wogData);
-        
-        // Actualizar puntos de los participantes
-        await actualizarPuntuaciones(wogData);
-        
-        // Mostrar mensaje de éxito
-        mostrarToast('WOG registrado correctamente');
-       
-        // Limpiar vista previa de foto
-previewFotoWog.innerHTML = '';
+        // En caso de edición, ajustar puntuaciones antes de actualizar
+        if (isEditing) {
+            try {
+                // Obtener datos actuales del WOG
+                const docRef = db.collection(COLECCION_WOGS).doc(wogId);
+                const docSnap = await docRef.get();
+                
+                if (docSnap.exists) {
+                    const wogActual = docSnap.data();
+                    
+                    // ---- SECCIÓN PARA AJUSTAR PUNTUACIONES ----
+                    
+                    // Primero hacemos todas las lecturas necesarias fuera de la transacción
+                    const participantesLecturas = new Map();
+                    
+                    // 1. Leer datos de la sede actual
+                    if (wogActual.sede) {
+                        const sedeDoc = await db.collection(COLECCION_PARTICIPANTES).doc(wogActual.sede).get();
+                        if (sedeDoc.exists) {
+                            participantesLecturas.set(wogActual.sede, sedeDoc.data());
+                        }
+                    }
+                    
+                    // 2. Leer datos de la nueva sede (si es diferente)
+                    if (sede !== wogActual.sede) {
+                        const nuevaSedeDoc = await db.collection(COLECCION_PARTICIPANTES).doc(sede).get();
+                        if (nuevaSedeDoc.exists) {
+                            participantesLecturas.set(sede, nuevaSedeDoc.data());
+                        }
+                    }
+                    
+                    // 3. Leer datos de asadores actuales
+                    if (wogActual.asadores && wogActual.asadores.length > 0) {
+                        for (const asadorId of wogActual.asadores) {
+                            if (!participantesLecturas.has(asadorId)) {
+                                const asadorDoc = await db.collection(COLECCION_PARTICIPANTES).doc(asadorId).get();
+                                if (asadorDoc.exists) {
+                                    participantesLecturas.set(asadorId, asadorDoc.data());
+                                }
+                            }
+                        }
+                    }
+                    
+                    // 4. Leer datos de nuevos asadores
+                    for (const asadorId of asadores) {
+                        if (!participantesLecturas.has(asadorId)) {
+                            const asadorDoc = await db.collection(COLECCION_PARTICIPANTES).doc(asadorId).get();
+                            if (asadorDoc.exists) {
+                                participantesLecturas.set(asadorId, asadorDoc.data());
+                            }
+                        }
+                    }
+                    
+                    // 5. Leer datos de compras actuales
+                    if (wogActual.comprasCompartidas && wogActual.comprasCompartidas.length > 0) {
+                        for (const compraId of wogActual.comprasCompartidas) {
+                            if (!participantesLecturas.has(compraId)) {
+                                const compraDoc = await db.collection(COLECCION_PARTICIPANTES).doc(compraId).get();
+                                if (compraDoc.exists) {
+                                    participantesLecturas.set(compraId, compraDoc.data());
+                                }
+                            }
+                        }
+                    } else if (wogActual.compras && !participantesLecturas.has(wogActual.compras)) {
+                        const compraDoc = await db.collection(COLECCION_PARTICIPANTES).doc(wogActual.compras).get();
+                        if (compraDoc.exists) {
+                            participantesLecturas.set(wogActual.compras, compraDoc.data());
+                        }
+                    }
+                    
+                    // 6. Leer datos de nuevas compras
+                    if (wogData.comprasCompartidas && wogData.comprasCompartidas.length > 0) {
+                        for (const compraId of wogData.comprasCompartidas) {
+                            if (!participantesLecturas.has(compraId)) {
+                                const compraDoc = await db.collection(COLECCION_PARTICIPANTES).doc(compraId).get();
+                                if (compraDoc.exists) {
+                                    participantesLecturas.set(compraId, compraDoc.data());
+                                }
+                            }
+                        }
+                    } else if (wogData.compras && !participantesLecturas.has(wogData.compras)) {
+                        const compraDoc = await db.collection(COLECCION_PARTICIPANTES).doc(wogData.compras).get();
+                        if (compraDoc.exists) {
+                            participantesLecturas.set(wogData.compras, compraDoc.data());
+                        }
+                    }
+                    
+                    // Ahora hacemos la transacción con todas las lecturas ya realizadas
+                    await db.runTransaction(async transaction => {
+                        // Primero actualizamos el documento del WOG
+                        transaction.update(docRef, wogData);
+                        
+                        // Luego ajustamos los puntos
+                        
+                        // 1. Restar puntos de sede anterior
+                        if (wogActual.sede) {
+                            const sedeRef = db.collection(COLECCION_PARTICIPANTES).doc(wogActual.sede);
+                            const puntosSedeActual = participantesLecturas.get(wogActual.sede)?.puntos_sede || 0;
+                            transaction.update(sedeRef, {
+                                puntos_sede: Math.max(0, puntosSedeActual - 1)
+                            });
+                        }
+                        
+                        // 2. Añadir puntos a nueva sede
+                        if (sede) {
+                            const nuevaSedeRef = db.collection(COLECCION_PARTICIPANTES).doc(sede);
+                            const puntosSedeNueva = participantesLecturas.get(sede)?.puntos_sede || 0;
+                            transaction.update(nuevaSedeRef, {
+                                puntos_sede: puntosSedeNueva + 1
+                            });
+                        }
+                        
+                        // 3. Ajustar puntos de asadores
+                        if (wogActual.asadores && wogActual.asadores.length > 0) {
+                            const puntoPorAsadorAnterior = 1 / wogActual.asadores.length;
+                            
+                            for (const asadorId of wogActual.asadores) {
+                                const asadorRef = db.collection(COLECCION_PARTICIPANTES).doc(asadorId);
+                                const puntosAsadorActual = participantesLecturas.get(asadorId)?.puntos_asador || 0;
+                                transaction.update(asadorRef, {
+                                    puntos_asador: Math.max(0, puntosAsadorActual - puntoPorAsadorAnterior)
+                                });
+                            }
+                        }
+                        
+                        if (asadores.length > 0) {
+                            const nuevoPuntoPorAsador = 1 / asadores.length;
+                            
+                            for (const asadorId of asadores) {
+                                const nuevoAsadorRef = db.collection(COLECCION_PARTICIPANTES).doc(asadorId);
+                                const puntosAsadorNuevo = participantesLecturas.get(asadorId)?.puntos_asador || 0;
+                                transaction.update(nuevoAsadorRef, {
+                                    puntos_asador: puntosAsadorNuevo + nuevoPuntoPorAsador
+                                });
+                            }
+                        }
+                        
+                        // 4. Ajustar puntos de compras
+                        if (wogActual.comprasCompartidas && wogActual.comprasCompartidas.length > 0) {
+                            const puntoPorCompraAnterior = 1 / wogActual.comprasCompartidas.length;
+                            
+                            for (const compraId of wogActual.comprasCompartidas) {
+                                const compraRef = db.collection(COLECCION_PARTICIPANTES).doc(compraId);
+                                const puntosCompraActual = participantesLecturas.get(compraId)?.puntos_compras || 0;
+                                transaction.update(compraRef, {
+                                    puntos_compras: Math.max(0, puntosCompraActual - puntoPorCompraAnterior)
+                                });
+                            }
+                        } else if (wogActual.compras) {
+                            const compraRef = db.collection(COLECCION_PARTICIPANTES).doc(wogActual.compras);
+                            const puntosCompraActual = participantesLecturas.get(wogActual.compras)?.puntos_compras || 0;
+                            transaction.update(compraRef, {
+                                puntos_compras: Math.max(0, puntosCompraActual - 1)
+                            });
+                        }
+                        
+                        if (wogData.comprasCompartidas && wogData.comprasCompartidas.length > 0) {
+                            const nuevoPuntoPorCompra = 1 / wogData.comprasCompartidas.length;
+                            
+                            for (const compraId of wogData.comprasCompartidas) {
+                                const nuevaCompraRef = db.collection(COLECCION_PARTICIPANTES).doc(compraId);
+                                const puntosCompraNuevo = participantesLecturas.get(compraId)?.puntos_compras || 0;
+                                transaction.update(nuevaCompraRef, {
+                                    puntos_compras: puntosCompraNuevo + nuevoPuntoPorCompra
+                                });
+                            }
+                        } else if (wogData.compras) {
+                            const nuevaCompraRef = db.collection(COLECCION_PARTICIPANTES).doc(wogData.compras);
+                            const puntosCompraNuevo = participantesLecturas.get(wogData.compras)?.puntos_compras || 0;
+                            transaction.update(nuevaCompraRef, {
+                                puntos_compras: puntosCompraNuevo + 1
+                            });
+                        }
+                    });
+                    
+                    // Mostrar mensaje de éxito
+                    mostrarToast('WOG actualizado correctamente');
+                    
+                } else {
+                    // Si no existe, mostrar error
+                    mostrarToast('Error: WOG no encontrado', true);
+                }
+            } catch (transactionError) {
+                console.error('Error en la transacción:', transactionError);
+                mostrarToast('Error al actualizar el WOG: ' + transactionError.message, true);
+                throw transactionError;
+            }
+        } else {
+            // Guardar nuevo WOG en Firestore
+            await db.collection(COLECCION_WOGS).add(wogData);
+            
+            // Actualizar puntos de los participantes para nuevos WOGs
+            await actualizarPuntuaciones(wogData);
+            
+            // Mostrar mensaje de éxito
+            mostrarToast('WOG registrado correctamente');
+        }
         
         // Resetear formulario
         formNuevoWog.reset();
+        formNuevoWog.removeAttribute('data-editing-id');
         fechaInput.value = formatearFechaInput(new Date());
         comprasCompartidasDiv.style.display = 'none';
         
@@ -305,10 +532,9 @@ previewFotoWog.innerHTML = '';
         // Restaurar botón
         const submitBtn = formNuevoWog.querySelector('button[type="submit"]');
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Guardar WOG';
+        submitBtn.textContent = isEditing ? 'Actualizar WOG' : 'Guardar WOG';
     }
 }
-
 // Actualizar puntuaciones de participantes
 async function actualizarPuntuaciones(wogData) {
     try {
