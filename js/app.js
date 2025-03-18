@@ -412,28 +412,32 @@ if (wog.asistentes && wog.asistentes.length > 0) {
                         
                         
                         <div class="historial-info">
-                            <div class="historial-detail">
-                                <div class="historial-label">Sede</div>
-                                <div class="historial-value">${sedeInfo.nombre}</div>
-                            </div>
-                            
-                            <div class="historial-detail">
-                                <div class="historial-label">Subsede</div>
-                                <div class="historial-value">${wog.subsede || '-'}</div>
-                            </div>
-                            
-                            <div class="historial-detail">
-                                <div class="historial-label">Compras</div>
-                                <div class="historial-value">${comprasNombres}</div>
-                            </div>
-                            
-                            <div class="historial-detail">
-                                <div class="historial-label">Asador</div>
-                                <div class="historial-value">${asadoresNombres}</div>
-                            </div>
-                            
-                            ${asistentesAvatars}
-                        </div>
+    <div class="historial-row">
+        <div class="historial-detail historial-detail-half">
+            <div class="historial-label">Sede</div>
+            <div class="historial-value">${sedeInfo.nombre}</div>
+        </div>
+        
+        <div class="historial-detail historial-detail-half">
+            <div class="historial-label">Subsede</div>
+            <div class="historial-value">${wog.subsede || '-'}</div>
+        </div>
+    </div>
+    
+    <div class="historial-row">
+        <div class="historial-detail historial-detail-half">
+            <div class="historial-label">Compras</div>
+            <div class="historial-value">${comprasNombres}</div>
+        </div>
+        
+        <div class="historial-detail historial-detail-half">
+            <div class="historial-label">Asador</div>
+            <div class="historial-value">${asadoresNombres}</div>
+        </div>
+    </div>
+    
+    ${asistentesAvatars}
+</div>
                     </div>
                 </div>
             `;
