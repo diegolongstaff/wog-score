@@ -2,7 +2,7 @@
 
 // Referencias a elementos del DOM
 const historialContainer = document.getElementById('historial-container');
-const modalConfirmacion = document.getElementById('modal-confirmacion');
+const modalConfirmacionHistorial = document.getElementById('modal-confirmacion');
 const modalConfirmacionTitulo = document.getElementById('modal-confirmacion-titulo');
 const modalConfirmacionMensaje = document.getElementById('modal-confirmacion-mensaje');
 const btnConfirmarAccion = document.getElementById('btn-confirmar-accion');
@@ -32,7 +32,7 @@ function initHistorialModule() {
     // Configurar botones de modales
     if (btnCancelarConfirmacion) {
         btnCancelarConfirmacion.addEventListener('click', function() {
-            modalConfirmacion.style.display = 'none';
+            modalConfirmacionHistorial.style.display = 'none';
         });
     }
     
@@ -187,7 +187,7 @@ function confirmarEliminarWogSimple(id) {
     btnConfirmarAccion.onclick = eliminarWogSimple;
     
     // Mostrar modal
-    modalConfirmacion.style.display = 'block';
+    modalConfirmacionHistorial.style.display = 'block';
 }
 
 // Eliminar un WOG (versión simple)
@@ -203,7 +203,7 @@ async function eliminarWogSimple() {
         await db.collection('wogs').doc(wogAEliminar).delete();
         
         // Cerrar modal
-        modalConfirmacion.style.display = 'none';
+        modalConfirmacionHistorial.style.display = 'none';
         
         // Mostrar mensaje
         mostrarToast('WOG eliminado correctamente');
