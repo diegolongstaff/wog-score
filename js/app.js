@@ -404,11 +404,7 @@ if (wog.asistentes && wog.asistentes.length > 0) {
                     </div>
                     
                     <div class="historial-detalles">
-                        ${wog.foto_url ? `
-                            <div class="historial-imagen">
-                                <img src="${wog.foto_url}" alt="Foto del WOG" class="historial-wog-imagen">
-                            </div>
-                        ` : ''}
+                        
                         
                         <div class="historial-info">
                             <div class="historial-detail">
