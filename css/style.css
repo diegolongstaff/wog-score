@@ -171,7 +171,17 @@ body {
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 15px;
 }
+/* New styles for historial layout */
+.historial-row {
+    display: flex;
+    width: 100%;
+    margin-bottom: 15px;
+}
 
+.historial-detail-half {
+    flex: 0 0 48%;
+    margin-right: 2%;
+}
 .historial-detail {
     display: flex;
     flex-direction: column;
@@ -1193,7 +1203,7 @@ input[type="file"] {
 .historial-info {
     flex: 1;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: 15px;
 }
 
