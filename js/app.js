@@ -753,7 +753,7 @@ async function editarWogDirecto(wogId) {
                                 // Si es un asador adicional, crear nuevo selector
                                 if (typeof agregarSelectorAsador === 'function') {
                                     agregarSelectorAsador();
-                                }
+                                })
                                 
                                 // Establecer el valor del selector recién creado
                                 setTimeout(() => {
