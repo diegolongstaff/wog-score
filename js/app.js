@@ -18,6 +18,7 @@ function inicializarApp() {
     if (typeof initWogModule === 'function') initWogModule();
     if (typeof initRankingModule === 'function') initRankingModule();
     if (typeof initHistorialModule === 'function') initHistorialModule();
+    if (typeof initWogEditModule === 'function') initWogEditModule();
     
     // Configurar eventos globales
     configurarEventosGlobales();
@@ -512,6 +513,7 @@ function confirmarEliminarWogDirecto(id) {
     // Mostrar modal
     modalConfirmacion.style.display = 'block';
 }
+
 // Eliminar un WOG directamente
 async function eliminarWogDirecto(wogId) {
     const modalConfirmacion = document.getElementById('modal-confirmacion');
@@ -619,6 +621,15 @@ async function eliminarWogDirecto(wogId) {
 
 // Función para editar un WOG existente
 function editarWogDirecto(wogId) {
+    // Usar el nuevo módulo de edición si está disponible
+    if (typeof window.editarWogDirecto = editarWogDirecto;
+window.formatearFechaInput = formatearFechaInput;Wog === 'function') {
+        window.editWog(wogId);
+        return;
+    }
+    
+    // Si no está disponible el nuevo módulo, usar el método antiguo
+    console.log("Usando método antiguo de edición (sin redistribución de puntos)");
     openTab('tab-nuevo');
     
     setTimeout(function() {
@@ -707,6 +718,7 @@ function editarWogDirecto(wogId) {
         });
     }, 500);
 }
+
 // Exportar funciones globales a window
 window.openTab = openTab;
 window.mostrarToast = mostrarToast;
@@ -717,4 +729,4 @@ window.mostrarNotasWogDirecto = mostrarNotasWogDirecto;
 window.cargarHistorialDirecto = cargarHistorialDirecto;
 window.confirmarEliminarWogDirecto = confirmarEliminarWogDirecto;
 window.eliminarWogDirecto = eliminarWogDirecto;
-window.editarWogDirecto = editarWogDirecto;
+window.edit
