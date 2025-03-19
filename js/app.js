@@ -622,8 +622,7 @@ async function eliminarWogDirecto(wogId) {
 // Función para editar un WOG existente
 function editWog(wogId) {
     // Usar el nuevo módulo de edición si está disponible
-    if (typeof window.editWog = editWog;
-window.formatearFechaInput = formatearFechaInput;Wog === 'function') {
+    if (typeof window.editWog === 'function') {
         window.editWog(wogId);
         return;
     }
