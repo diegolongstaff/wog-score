@@ -400,7 +400,7 @@ if (wog.asistentes && wog.asistentes.length > 0) {
                                     <i class="fas fa-sticky-note"></i>
                                 </button>
                             ` : ''}
-                             <button class="historial-accion editar" onclick="editarWogDirecto('${doc.id}')">
+                             <button class="historial-accion editar" onclick="editWog('${doc.id}')">
                                   <i class="fas fa-edit"></i>
                                 </button>
                             <button class="historial-accion eliminar" onclick="confirmarEliminarWogDirecto('${doc.id}')">
@@ -620,9 +620,9 @@ async function eliminarWogDirecto(wogId) {
 }
 
 // Función para editar un WOG existente
-function editarWogDirecto(wogId) {
+function editWog(wogId) {
     // Usar el nuevo módulo de edición si está disponible
-    if (typeof window.editarWogDirecto = editarWogDirecto;
+    if (typeof window.editWog = editWog;
 window.formatearFechaInput = formatearFechaInput;Wog === 'function') {
         window.editWog(wogId);
         return;
