@@ -376,3 +376,6 @@ function mostrarDetalleParticipante(participante) {
     // Mostrar modal
     modalParticipanteDetalle.style.display = 'block';
 }
+
+// Exportar funciones necesarias
+window.initRankingModule = initRankingModule;

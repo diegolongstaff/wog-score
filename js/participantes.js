@@ -506,5 +506,6 @@ async function eliminarParticipante() {
 }
 
 // Exportar funciones necesarias al alcance global
+window.initParticipantesModule = initParticipantesModule;
 window.editarParticipante = editarParticipante;
 window.confirmarEliminarParticipante = confirmarEliminarParticipante;

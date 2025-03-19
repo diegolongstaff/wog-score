@@ -5,8 +5,7 @@ const firebaseConfig = {
   projectId: "wog-score",
   storageBucket: "wog-score.firebasestorage.app",
   messagingSenderId: "44020602488",
-  appId: "1:44020602488:web:90e29d117bfc74e164ff8d",
-  measurementId: "G-GRZX39NEEZ"
+  appId: "1:44020602488:web:90e29d117bfc74e164ff8d"
 };
 
 // Inicializar Firebase

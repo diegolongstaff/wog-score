@@ -1,187 +1,243 @@
-// Módulo para editar WOGs con redistribución adecuada de puntos
+// Módulo para la edición de WOGs y redistribución de puntos
 
-// Referencias a elementos del DOM para el modal de edición
-let modalEditWog = null;
-let formEditWog = null;
-let editWogId = null;
-let originalWogData = null; // Para almacenar los datos originales y compararlos
+// Referencias a elementos del DOM
+const modalEditWog = document.getElementById('modal-edit-wog');
+const formEditWog = document.getElementById('edit-wog-form');
+const editWogIdInput = document.getElementById('edit-wog-id');
+const editFechaInput = document.getElementById('edit-fecha');
+const editSedeSelect = document.getElementById('edit-sede');
+const editSubsedeInput = document.getElementById('edit-subsede');
+const editComprasSelect = document.getElementById('edit-compras');
+const editComprasCompartidasDiv = document.getElementById('edit-compras-compartidas');
+const editComprasParticipantesDiv = document.getElementById('edit-compras-participantes');
+const editAsadoresContainer = document.getElementById('edit-asadores-container');
+const editAsistentesLista = document.getElementById('edit-asistentes-lista');
+const editNotasInput = document.getElementById('edit-notas');
+const btnEditAddAsador = document.getElementById('edit-add-asador');
+const btnCancelarEdit = document.getElementById('btn-cancelar-edit');
 
-// Inicializar el módulo de edición
+// Variable para almacenar los datos originales del WOG
+let originalWogData = null;
+
+// Inicializar módulo
 function initWogEditModule() {
-    console.log('Inicializando módulo de Edición de WOG...');
+    console.log('Inicializando módulo de edición de WOGs...');
     
-    // Crear el modal para editar WOGs si no existe
-    createEditModal();
-    
-    // Configurar eventos de cierre del modal
-    document.querySelector('#modal-edit-wog .close-modal').addEventListener('click', () => {
+    // Configurar eventos
+    formEditWog.addEventListener('submit', guardarWogEditado);
+    editComprasSelect.addEventListener('change', toggleEditComprasCompartidas);
+    btnEditAddAsador.addEventListener('click', agregarEditSelectorAsador);
+    btnCancelarEdit.addEventListener('click', () => {
         modalEditWog.style.display = 'none';
     });
     
-    // Cerrar modal al hacer clic fuera
-    window.addEventListener('click', (event) => {
-        if (event.target === modalEditWog) {
-            modalEditWog.style.display = 'none';
-        }
-    });
-    
-    // Configurar envío del formulario
-    formEditWog.addEventListener('submit', saveEditedWog);
-    
-    // Configurar cambio de compras
-    document.getElementById('edit-compras').addEventListener('change', toggleEditComprasCompartidas);
-
-    // Configurar botón para agregar asadores
-    document.getElementById('edit-add-asador').addEventListener('click', addAsadorSelector);
-    
-    console.log('Módulo de Edición de WOG inicializado correctamente');
+    console.log('Módulo de edición de WOGs inicializado correctamente');
 }
 
-// Crear el modal de edición en el DOM
-function createEditModal() {
-    // Comprobar si el modal ya existe
-    if (document.getElementById('modal-edit-wog')) {
-        modalEditWog = document.getElementById('modal-edit-wog');
-        formEditWog = document.getElementById('edit-wog-form');
-        return;
-    }
-    
-    // Crear elemento modal
-    const modalHTML = `
-        <div id="modal-edit-wog" class="modal">
-            <div class="modal-content">
-                <span class="close-modal">&times;</span>
-                <h2>Editar WOG</h2>
-                
-                <form id="edit-wog-form">
-                    <input type="hidden" id="edit-wog-id">
-                    
-                    <div class="form-group">
-                        <label for="edit-fecha">Fecha</label>
-                        <input type="date" id="edit-fecha" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="edit-sede">Sede</label>
-                        <select id="edit-sede" required>
-                            <option value="">Seleccionar anfitrión</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="edit-subsede">Subsede</label>
-                        <input type="text" id="edit-subsede" placeholder="Ej: Casa, Club, CNSI...">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="edit-compras">Compras</label>
-                        <select id="edit-compras" required>
-                            <option value="">Seleccionar responsable</option>
-                            <option value="compartido">Compartido</option>
-                        </select>
-                    </div>
-                    
-                    <div id="edit-compras-compartidas" class="form-group" style="display: none;">
-                        <label>Compras compartidas entre:</label>
-                        <div id="edit-compras-participantes" class="checkbox-group"></div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Asador</label>
-                        <div id="edit-asadores-container">
-                            <div class="asador-item">
-                                <select class="asador-select" required>
-                                    <option value="">Seleccionar asador</option>
-                                </select>
-                            </div>
-                        </div>
-                        <button type="button" id="edit-add-asador" class="btn btn-circle">
-                            <i class="fas fa-plus"></i>
-                        </button>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Asistentes</label>
-                        <div id="edit-asistentes-lista" class="checkbox-group"></div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="edit-notas">Notas (opcional)</label>
-                        <textarea id="edit-notas" placeholder="Temas discutidos, actividades, anécdotas..." rows="4"></textarea>
-                    </div>
-                    
-                    <div class="form-actions">
-                        <button type="button" id="btn-cancelar-edit-wog" class="btn btn-cancel">Cancelar</button>
-                        <button type="submit" class="btn btn-submit">Guardar Cambios</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    `;
-    
-    // Añadir modal al body
-    document.body.insertAdjacentHTML('beforeend', modalHTML);
-    
-    // Obtener referencias al modal y formulario
-    modalEditWog = document.getElementById('modal-edit-wog');
-    formEditWog = document.getElementById('edit-wog-form');
-    
-    // Configurar botón de cancelar
-    document.getElementById('btn-cancelar-edit-wog').addEventListener('click', () => {
-        modalEditWog.style.display = 'none';
-    });
-}
-
-// Alternar sección de compras compartidas
+// Mostrar/ocultar sección de compras compartidas en el formulario de edición
 function toggleEditComprasCompartidas() {
-    const comprasSelect = document.getElementById('edit-compras');
-    const comprasCompartidasDiv = document.getElementById('edit-compras-compartidas');
-    
-    if (comprasSelect.value === 'compartido') {
-        comprasCompartidasDiv.style.display = 'block';
+    if (editComprasSelect.value === 'compartido') {
+        editComprasCompartidasDiv.style.display = 'block';
     } else {
-        comprasCompartidasDiv.style.display = 'none';
+        editComprasCompartidasDiv.style.display = 'none';
     }
 }
 
-// Añadir otro selector de asador
-function addAsadorSelector() {
-    const asadoresContainer = document.getElementById('edit-asadores-container');
-    
+// Agregar un selector de asador adicional en el formulario de edición
+function agregarEditSelectorAsador() {
     // Crear contenedor para el nuevo selector
     const asadorItem = document.createElement('div');
     asadorItem.className = 'asador-item';
     
     // Clonar el primer selector de asador
-    const templateSelect = asadoresContainer.querySelector('.asador-select');
+    const templateSelect = editAsadoresContainer.querySelector('.asador-select');
     const newSelect = templateSelect.cloneNode(true);
     newSelect.className = 'asador-select';
     newSelect.value = ''; // Resetear valor
     
     // Crear botón para eliminar
-    const btnDelete = document.createElement('button');
-    btnDelete.type = 'button';
-    btnDelete.className = 'btn-circle btn-small';
-    btnDelete.innerHTML = '<i class="fas fa-times"></i>';
-    btnDelete.style.marginLeft = '10px';
-    btnDelete.addEventListener('click', () => {
+    const btnEliminar = document.createElement('button');
+    btnEliminar.type = 'button';
+    btnEliminar.className = 'btn-circle btn-small';
+    btnEliminar.innerHTML = '<i class="fas fa-times"></i>';
+    btnEliminar.style.marginLeft = '10px';
+    btnEliminar.addEventListener('click', () => {
         asadorItem.remove();
     });
     
     // Añadir elementos al contenedor
     asadorItem.appendChild(newSelect);
-    asadorItem.appendChild(btnDelete);
+    asadorItem.appendChild(btnEliminar);
     
     // Añadir al contenedor principal
-    asadoresContainer.appendChild(asadorItem);
+    editAsadoresContainer.appendChild(asadorItem);
 }
 
-// Abrir el modal de edición con los datos del WOG
-async function editWog(wogId) {
+// Cargar datos para el formulario de edición de WOG
+async function cargarFormularioEditWog() {
     try {
-        editWogId = wogId;
+        // Obtener participantes activos
+        const snapshot = await db.collection(COLECCION_PARTICIPANTES)
+            .where('activo', '==', true)
+            .get();
         
-        // Mostrar estado de carga
+        const participantes = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+        
+        // Ordenar por nombre
+        participantes.sort((a, b) => a.nombre.localeCompare(b.nombre));
+        
+        // Llenar selector de sede
+        editSedeSelect.innerHTML = '<option value="">Seleccionar anfitrión</option>';
+        participantes.forEach(p => {
+            const option = document.createElement('option');
+            option.value = p.id;
+            option.textContent = p.nombre;
+            editSedeSelect.appendChild(option);
+        });
+        
+        // Llenar selector de compras
+        editComprasSelect.innerHTML = '<option value="">Seleccionar responsable</option>';
+        editComprasSelect.innerHTML += '<option value="compartido">Compartido</option>';
+        participantes.forEach(p => {
+            const option = document.createElement('option');
+            option.value = p.id;
+            option.textContent = p.nombre;
+            editComprasSelect.appendChild(option);
+        });
+        
+        // Limpiar y llenar selector de asador
+        editAsadoresContainer.innerHTML = '';
+        
+        const asadorItem = document.createElement('div');
+        asadorItem.className = 'asador-item';
+        
+        const asadorSelect = document.createElement('select');
+        asadorSelect.className = 'asador-select';
+        asadorSelect.required = true;
+        asadorSelect.innerHTML = '<option value="">Seleccionar asador</option>';
+        
+        participantes.forEach(p => {
+            const option = document.createElement('option');
+            option.value = p.id;
+            option.textContent = p.nombre;
+            asadorSelect.appendChild(option);
+        });
+        
+        asadorItem.appendChild(asadorSelect);
+        editAsadoresContainer.appendChild(asadorItem);
+        
+        // Llenar checkboxes de asistentes
+        editAsistentesLista.innerHTML = '';
+        participantes.forEach(p => {
+            const checkbox = document.createElement('div');
+            checkbox.className = 'checkbox-item';
+            checkbox.innerHTML = `
+                <input type="checkbox" id="edit-asistente-${p.id}" value="${p.id}">
+                <label for="edit-asistente-${p.id}">${p.nombre}</label>
+            `;
+            editAsistentesLista.appendChild(checkbox);
+        });
+        
+        // Llenar checkboxes de compras compartidas
+        editComprasParticipantesDiv.innerHTML = '';
+        participantes.forEach(p => {
+            const checkbox = document.createElement('div');
+            checkbox.className = 'checkbox-item';
+            checkbox.innerHTML = `
+                <input type="checkbox" id="edit-compra-compartida-${p.id}" value="${p.id}">
+                <label for="edit-compra-compartida-${p.id}">${p.nombre}</label>
+            `;
+            editComprasParticipantesDiv.appendChild(checkbox);
+        });
+        
+    } catch (error) {
+        console.error('Error al cargar formulario de edición de WOG:', error);
+        mostrarToast('Error al cargar participantes', true);
+    }
+}
+
+// Llenar el formulario con los datos del WOG a editar
+function llenarFormularioEdit(wogData) {
+    // Establecer ID
+    editWogIdInput.value = wogData.id;
+    
+    // Establecer fecha (convertir de Timestamp a formato de input date)
+    const fecha = wogData.fecha.toDate ? wogData.fecha.toDate() : new Date(wogData.fecha);
+    editFechaInput.value = formatearFechaInput(fecha);
+    
+    // Establecer sede y subsede
+    editSedeSelect.value = wogData.sede || '';
+    editSubsedeInput.value = wogData.subsede || '';
+    
+    // Establecer compras (individual o compartida)
+    if (wogData.comprasCompartidas && wogData.comprasCompartidas.length > 0) {
+        editComprasSelect.value = 'compartido';
+        editComprasCompartidasDiv.style.display = 'block';
+        
+        // Marcar las compras compartidas
+        wogData.comprasCompartidas.forEach(id => {
+            const checkbox = document.getElementById(`edit-compra-compartida-${id}`);
+            if (checkbox) checkbox.checked = true;
+        });
+    } else if (wogData.compras) {
+        editComprasSelect.value = wogData.compras;
+        editComprasCompartidasDiv.style.display = 'none';
+    } else {
+        editComprasSelect.value = '';
+        editComprasCompartidasDiv.style.display = 'none';
+    }
+    
+    // Establecer asadores (pueden ser múltiples)
+    if (wogData.asadores && wogData.asadores.length > 0) {
+        // Limpiar los asadores existentes excepto el primero
+        while (editAsadoresContainer.children.length > 1) {
+            editAsadoresContainer.removeChild(editAsadoresContainer.lastChild);
+        }
+        
+        // Establecer el primer asador
+        const primerAsadorSelect = editAsadoresContainer.querySelector('.asador-select');
+        primerAsadorSelect.value = wogData.asadores[0] || '';
+        
+        // Agregar selectores para los asadores adicionales
+        for (let i = 1; i < wogData.asadores.length; i++) {
+            // Crear nuevo selector
+            agregarEditSelectorAsador();
+            
+            // Establecer el valor
+            const nuevoAsadorSelect = editAsadoresContainer.querySelectorAll('.asador-select')[i];
+            if (nuevoAsadorSelect) nuevoAsadorSelect.value = wogData.asadores[i];
+        }
+    } else {
+        // Si no hay asadores, simplemente limpiar el selector
+        const primerAsadorSelect = editAsadoresContainer.querySelector('.asador-select');
+        if (primerAsadorSelect) primerAsadorSelect.value = '';
+    }
+    
+    // Establecer asistentes
+    if (wogData.asistentes && wogData.asistentes.length > 0) {
+        // Desmarcar todos primero
+        editAsistentesLista.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        
+        // Marcar los seleccionados
+        wogData.asistentes.forEach(id => {
+            const checkbox = document.getElementById(`edit-asistente-${id}`);
+            if (checkbox) checkbox.checked = true;
+        });
+    }
+    
+    // Establecer notas
+    editNotasInput.value = wogData.notas || '';
+}
+
+// Abrir modal para editar un WOG existente
+async function editarWog(wogId) {
+    try {
+        // Mostrar loader
         modalEditWog.style.display = 'block';
         formEditWog.innerHTML = `
             <div class="loader">
@@ -189,210 +245,54 @@ async function editWog(wogId) {
             </div>
         `;
         
-        // Obtener datos del WOG
-        const docRef = db.collection(COLECCION_WOGS).doc(wogId);
-        const doc = await docRef.get();
+        // Cargar y mostrar el formulario de edición
+        await cargarFormularioEditWog();
+        
+        // Obtener datos del WOG a editar
+        const doc = await db.collection(COLECCION_WOGS).doc(wogId).get();
         
         if (!doc.exists) {
-            mostrarToast('No se encontró el WOG', true);
+            mostrarToast('No se encontró el WOG a editar', true);
             modalEditWog.style.display = 'none';
             return;
         }
         
-        // Almacenar datos originales para comparación al guardar
+        // Guardar los datos originales para compararlos después
         originalWogData = {
             id: doc.id,
             ...doc.data()
         };
         
-        // Restaurar formulario
-        createEditModal(); // Esto restablecerá la estructura del formulario
-        
-        // Cargar participantes para poblar selectores
-        await loadEditFormParticipants();
-        
-        // Rellenar formulario con datos del WOG
-        fillEditForm(originalWogData);
+        // Llenar el formulario con los datos
+        llenarFormularioEdit(originalWogData);
         
     } catch (error) {
-        console.error('Error al cargar WOG para editar:', error);
-        mostrarToast('Error al cargar el WOG para editar', true);
+        console.error('Error al cargar WOG para edición:', error);
+        mostrarToast('Error al cargar datos del WOG', true);
         modalEditWog.style.display = 'none';
     }
 }
 
-// Cargar participantes para el formulario de edición
-async function loadEditFormParticipants() {
-    try {
-        // Obtener participantes activos
-        const snapshot = await db.collection(COLECCION_PARTICIPANTES)
-            .where('activo', '==', true)
-            .get();
-        
-        const participants = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        }));
-        
-        // Ordenar por nombre
-        participants.sort((a, b) => a.nombre.localeCompare(b.nombre));
-        
-        // Rellenar selector de sede
-        const sedeSelect = document.getElementById('edit-sede');
-        sedeSelect.innerHTML = '<option value="">Seleccionar anfitrión</option>';
-        participants.forEach(p => {
-            const option = document.createElement('option');
-            option.value = p.id;
-            option.textContent = p.nombre;
-            sedeSelect.appendChild(option);
-        });
-        
-        // Rellenar selector de compras
-        const comprasSelect = document.getElementById('edit-compras');
-        comprasSelect.innerHTML = '<option value="">Seleccionar responsable</option>';
-        comprasSelect.innerHTML += '<option value="compartido">Compartido</option>';
-        participants.forEach(p => {
-            const option = document.createElement('option');
-            option.value = p.id;
-            option.textContent = p.nombre;
-            comprasSelect.appendChild(option);
-        });
-        
-        // Rellenar selector de asador
-        const asadorSelect = document.querySelector('#edit-asadores-container .asador-select');
-        asadorSelect.innerHTML = '<option value="">Seleccionar asador</option>';
-        participants.forEach(p => {
-            const option = document.createElement('option');
-            option.value = p.id;
-            option.textContent = p.nombre;
-            asadorSelect.appendChild(option);
-        });
-        
-        // Rellenar checkboxes de asistentes
-        const asistentesLista = document.getElementById('edit-asistentes-lista');
-        asistentesLista.innerHTML = '';
-        participants.forEach(p => {
-            const checkbox = document.createElement('div');
-            checkbox.className = 'checkbox-item';
-            checkbox.innerHTML = `
-                <input type="checkbox" id="edit-asistente-${p.id}" value="${p.id}">
-                <label for="edit-asistente-${p.id}">${p.nombre}</label>
-            `;
-            asistentesLista.appendChild(checkbox);
-        });
-        
-        // Rellenar checkboxes de compras compartidas
-        const comprasParticipantesDiv = document.getElementById('edit-compras-participantes');
-        comprasParticipantesDiv.innerHTML = '';
-        participants.forEach(p => {
-            const checkbox = document.createElement('div');
-            checkbox.className = 'checkbox-item';
-            checkbox.innerHTML = `
-                <input type="checkbox" id="edit-compra-compartida-${p.id}" value="${p.id}">
-                <label for="edit-compra-compartida-${p.id}">${p.nombre}</label>
-            `;
-            comprasParticipantesDiv.appendChild(checkbox);
-        });
-        
-    } catch (error) {
-        console.error('Error cargando participantes para edición:', error);
-        throw error;
-    }
-}
-
-// Rellenar el formulario con los datos del WOG
-function fillEditForm(wogData) {
-    // Establecer ID oculto
-    document.getElementById('edit-wog-id').value = wogData.id;
-    
-    // Establecer fecha
-    if (wogData.fecha) {
-        const fecha = wogData.fecha.toDate ? wogData.fecha.toDate() : new Date(wogData.fecha);
-        document.getElementById('edit-fecha').value = formatearFechaInput(fecha);
-    }
-    
-    // Establecer sede y subsede
-    if (wogData.sede) document.getElementById('edit-sede').value = wogData.sede;
-    if (wogData.subsede) document.getElementById('edit-subsede').value = wogData.subsede;
-    
-    // Establecer notas
-    if (wogData.notas) document.getElementById('edit-notas').value = wogData.notas;
-    
-    // Establecer compras
-    if (wogData.compras) {
-        document.getElementById('edit-compras').value = wogData.compras;
-    } else if (wogData.comprasCompartidas && wogData.comprasCompartidas.length > 0) {
-        document.getElementById('edit-compras').value = 'compartido';
-        toggleEditComprasCompartidas();
-        
-        // Marcar checkboxes de compras compartidas
-        setTimeout(() => {
-            wogData.comprasCompartidas.forEach(id => {
-                const checkbox = document.getElementById(`edit-compra-compartida-${id}`);
-                if (checkbox) checkbox.checked = true;
-            });
-        }, 100);
-    }
-    
-    // Configurar asadores
-    const asadoresContainer = document.getElementById('edit-asadores-container');
-    
-    // Limpiar contenedor excepto el primer elemento
-    while (asadoresContainer.children.length > 1) {
-        asadoresContainer.removeChild(asadoresContainer.lastChild);
-    }
-    
-    // Establecer asadores
-    if (wogData.asadores && wogData.asadores.length > 0) {
-        // Establecer primer asador
-        const firstSelect = asadoresContainer.querySelector('.asador-select');
-        if (firstSelect) firstSelect.value = wogData.asadores[0];
-        
-        // Añadir selectores adicionales para asadores
-        for (let i = 1; i < wogData.asadores.length; i++) {
-            addAsadorSelector();
-        }
-        
-        // Establecer valores para asadores adicionales
-        setTimeout(() => {
-            const selectors = asadoresContainer.querySelectorAll('.asador-select');
-            wogData.asadores.forEach((id, index) => {
-                if (index < selectors.length) {
-                    selectors[index].value = id;
-                }
-            });
-        }, 100);
-    }
-    
-    // Establecer asistentes
-    if (wogData.asistentes && wogData.asistentes.length > 0) {
-        wogData.asistentes.forEach(id => {
-            const checkbox = document.getElementById(`edit-asistente-${id}`);
-            if (checkbox) checkbox.checked = true;
-        });
-    }
-}
-
-// Guardar el WOG editado
-async function saveEditedWog(event) {
+// Guardar un WOG editado
+async function guardarWogEditado(event) {
     event.preventDefault();
     
     try {
-        const wogId = document.getElementById('edit-wog-id').value;
-        if (!wogId) {
-            mostrarToast('ID de WOG no válido', true);
+        if (!originalWogData) {
+            mostrarToast('Error al editar: no se encontraron los datos originales', true);
             return;
         }
         
         // Recopilar datos del formulario
-        const fecha = document.getElementById('edit-fecha').value;
-        const sede = document.getElementById('edit-sede').value;
-        const subsede = document.getElementById('edit-subsede').value.trim();
-        const notas = document.getElementById('edit-notas').value.trim();
+        const wogId = editWogIdInput.value;
+        const fecha = editFechaInput.value;
+        const sede = editSedeSelect.value;
+        const subsede = editSubsedeInput.value.trim();
+        const notas = editNotasInput.value.trim();
         
         // Obtener asadores
         const asadores = [];
-        document.querySelectorAll('#edit-asadores-container .asador-select').forEach(select => {
+        editAsadoresContainer.querySelectorAll('.asador-select').forEach(select => {
             if (select.value) {
                 asadores.push(select.value);
             }
@@ -400,7 +300,7 @@ async function saveEditedWog(event) {
         
         // Obtener asistentes
         const asistentes = [];
-        document.querySelectorAll('#edit-asistentes-lista input[type="checkbox"]:checked').forEach(checkbox => {
+        editAsistentesLista.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
             asistentes.push(checkbox.value);
         });
         
@@ -430,20 +330,16 @@ async function saveEditedWog(event) {
             asistentes.push(sede);
         }
         
-        // Validar que los asadores estén incluidos en los asistentes
+        // Validar asadores estén incluidos en los asistentes
         asadores.forEach(asador => {
             if (!asistentes.includes(asador)) {
                 asistentes.push(asador);
             }
         });
         
-        // Crear fecha sin problemas de zona horaria
-        const fechaPartes = fecha.split('-').map(part => parseInt(part, 10));
-        const fechaObj = new Date(fechaPartes[0], fechaPartes[1] - 1, fechaPartes[2], 12, 0, 0);
-        
-        // Preparar objeto WOG
+        // Preparar objeto WOG actualizado
         const wogData = {
-            fecha: firebase.firestore.Timestamp.fromDate(fechaObj),
+            fecha: firebase.firestore.Timestamp.fromDate(new Date(fecha)),
             sede,
             subsede,
             asadores,
@@ -453,11 +349,10 @@ async function saveEditedWog(event) {
         };
         
         // Manejar compras (normal o compartidas)
-        const comprasSelect = document.getElementById('edit-compras');
-        if (comprasSelect.value === 'compartido') {
+        if (editComprasSelect.value === 'compartido') {
             // Obtener participantes seleccionados para compras compartidas
             const comprasCompartidas = [];
-            document.querySelectorAll('#edit-compras-participantes input[type="checkbox"]:checked').forEach(checkbox => {
+            editComprasParticipantesDiv.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
                 comprasCompartidas.push(checkbox.value);
                 
                 // Asegurar que estén en la lista de asistentes
@@ -472,16 +367,23 @@ async function saveEditedWog(event) {
             }
             
             wogData.comprasCompartidas = comprasCompartidas;
-            wogData.compras = firebase.firestore.FieldValue.delete();
-        } else if (comprasSelect.value) {
-            wogData.compras = comprasSelect.value;
+            
+            // Si había un compras individual, eliminarlo
+            if (originalWogData.compras) {
+                wogData.compras = firebase.firestore.FieldValue.delete();
+            }
+        } else if (editComprasSelect.value) {
+            wogData.compras = editComprasSelect.value;
             
             // Asegurar que esté en la lista de asistentes
-            if (!asistentes.includes(comprasSelect.value)) {
-                asistentes.push(comprasSelect.value);
+            if (!asistentes.includes(editComprasSelect.value)) {
+                asistentes.push(editComprasSelect.value);
             }
             
-            wogData.comprasCompartidas = firebase.firestore.FieldValue.delete();
+            // Si había compras compartidas, eliminarlas
+            if (originalWogData.comprasCompartidas) {
+                wogData.comprasCompartidas = firebase.firestore.FieldValue.delete();
+            }
         } else {
             mostrarToast('Debes seleccionar quién hizo las compras', true);
             return;
@@ -492,202 +394,17 @@ async function saveEditedWog(event) {
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
         
-        // === PROCESO DE REDISTRIBUCIÓN DE PUNTOS ===
-        
-        // Primero hacemos todas las lecturas necesarias de la base de datos
-        const participantesMap = new Map();
-        
-        // 1. Obtener datos de sede original y nueva sede
-        if (originalWogData.sede) {
-            const sedeOriginalDoc = await db.collection(COLECCION_PARTICIPANTES).doc(originalWogData.sede).get();
-            if (sedeOriginalDoc.exists) {
-                participantesMap.set(originalWogData.sede, sedeOriginalDoc.data());
-            }
-        }
-        
-        if (sede !== originalWogData.sede) {
-            const nuevaSedeDoc = await db.collection(COLECCION_PARTICIPANTES).doc(sede).get();
-            if (nuevaSedeDoc.exists) {
-                participantesMap.set(sede, nuevaSedeDoc.data());
-            }
-        }
-        
-        // 2. Obtener datos de asadores originales y nuevos
-        if (originalWogData.asadores && originalWogData.asadores.length > 0) {
-            for (const asadorId of originalWogData.asadores) {
-                if (!participantesMap.has(asadorId)) {
-                    const asadorDoc = await db.collection(COLECCION_PARTICIPANTES).doc(asadorId).get();
-                    if (asadorDoc.exists) {
-                        participantesMap.set(asadorId, asadorDoc.data());
-                    }
-                }
-            }
-        }
-        
-        for (const asadorId of asadores) {
-            if (!participantesMap.has(asadorId)) {
-                const asadorDoc = await db.collection(COLECCION_PARTICIPANTES).doc(asadorId).get();
-                if (asadorDoc.exists) {
-                    participantesMap.set(asadorId, asadorDoc.data());
-                }
-            }
-        }
-        
-        // 3. Obtener datos de compras originales y nuevas
-        if (originalWogData.comprasCompartidas && originalWogData.comprasCompartidas.length > 0) {
-            for (const compraId of originalWogData.comprasCompartidas) {
-                if (!participantesMap.has(compraId)) {
-                    const compraDoc = await db.collection(COLECCION_PARTICIPANTES).doc(compraId).get();
-                    if (compraDoc.exists) {
-                        participantesMap.set(compraId, compraDoc.data());
-                    }
-                }
-            }
-        } else if (originalWogData.compras && !participantesMap.has(originalWogData.compras)) {
-            const compraDoc = await db.collection(COLECCION_PARTICIPANTES).doc(originalWogData.compras).get();
-            if (compraDoc.exists) {
-                participantesMap.set(originalWogData.compras, compraDoc.data());
-            }
-        }
-        
-        if (wogData.comprasCompartidas) {
-            for (const compraId of wogData.comprasCompartidas) {
-                if (!participantesMap.has(compraId)) {
-                    const compraDoc = await db.collection(COLECCION_PARTICIPANTES).doc(compraId).get();
-                    if (compraDoc.exists) {
-                        participantesMap.set(compraId, compraDoc.data());
-                    }
-                }
-            }
-        } else if (wogData.compras && !participantesMap.has(wogData.compras)) {
-            const compraDoc = await db.collection(COLECCION_PARTICIPANTES).doc(wogData.compras).get();
-            if (compraDoc.exists) {
-                participantesMap.set(wogData.compras, compraDoc.data());
-            }
-        }
-        
-        // Ahora realizamos la transacción con todas las lecturas ya realizadas
-        await db.runTransaction(async transaction => {
-            const wogRef = db.collection(COLECCION_WOGS).doc(wogId);
-            
-            // Actualizar el documento del WOG
-            transaction.update(wogRef, wogData);
-            
-            // === PROCESO DE ACTUALIZACIÓN DE PUNTOS ===
-            
-            // 1. Ajustar puntos de sede
-            if (originalWogData.sede !== sede) {
-                // Restar punto de sede original
-                if (originalWogData.sede) {
-                    const sedeOriginalRef = db.collection(COLECCION_PARTICIPANTES).doc(originalWogData.sede);
-                    const puntosSedeOriginal = participantesMap.get(originalWogData.sede)?.puntos_sede || 0;
-                    transaction.update(sedeOriginalRef, {
-                        puntos_sede: Math.max(0, puntosSedeOriginal - 1)
-                    });
-                }
-                
-                // Añadir punto a nueva sede
-                const nuevaSedeRef = db.collection(COLECCION_PARTICIPANTES).doc(sede);
-                const puntosSedeNueva = participantesMap.get(sede)?.puntos_sede || 0;
-                transaction.update(nuevaSedeRef, {
-                    puntos_sede: puntosSedeNueva + 1
-                });
-            }
-            
-            // 2. Ajustar puntos de asadores
-            // Identificar asadores que se eliminaron y agregaron
-            const asadoresOriginales = new Set(originalWogData.asadores || []);
-            const asadoresNuevos = new Set(asadores);
-            
-            // Si la cantidad de asadores cambió o hay diferentes asadores, actualizar todos
-            if (asadoresOriginales.size !== asadoresNuevos.size || 
-                !Array.from(asadoresOriginales).every(id => asadoresNuevos.has(id))) {
-                
-                // Restar puntos a asadores originales
-                if (asadoresOriginales.size > 0) {
-                    const puntoPorAsadorOriginal = 1 / asadoresOriginales.size;
-                    
-                    for (const asadorId of asadoresOriginales) {
-                        const asadorRef = db.collection(COLECCION_PARTICIPANTES).doc(asadorId);
-                        const puntosActuales = participantesMap.get(asadorId)?.puntos_asador || 0;
-                        transaction.update(asadorRef, {
-                            puntos_asador: Math.max(0, puntosActuales - puntoPorAsadorOriginal)
-                        });
-                    }
-                }
-                
-                // Añadir puntos a nuevos asadores
-                if (asadoresNuevos.size > 0) {
-                    const puntoPorAsadorNuevo = 1 / asadoresNuevos.size;
-                    
-                    for (const asadorId of asadoresNuevos) {
-                        const asadorRef = db.collection(COLECCION_PARTICIPANTES).doc(asadorId);
-                        const puntosActuales = participantesMap.get(asadorId)?.puntos_asador || 0;
-                        transaction.update(asadorRef, {
-                            puntos_asador: puntosActuales + puntoPorAsadorNuevo
-                        });
-                    }
-                }
-            }
-            
-            // 3. Ajustar puntos de compras
-            const comprasOriginalesCompartidas = new Set(originalWogData.comprasCompartidas || []);
-            const comprasNuevasCompartidas = new Set(wogData.comprasCompartidas || []);
-            const comprasOriginalIndividual = originalWogData.compras;
-            const comprasNuevaIndividual = wogData.compras;
-            
-            // Restar puntos de compras originales
-            if (comprasOriginalesCompartidas.size > 0) {
-                const puntoPorCompraOriginal = 1 / comprasOriginalesCompartidas.size;
-                
-                for (const compraId of comprasOriginalesCompartidas) {
-                    const compraRef = db.collection(COLECCION_PARTICIPANTES).doc(compraId);
-                    const puntosActuales = participantesMap.get(compraId)?.puntos_compras || 0;
-                    transaction.update(compraRef, {
-                        puntos_compras: Math.max(0, puntosActuales - puntoPorCompraOriginal)
-                    });
-                }
-            } else if (comprasOriginalIndividual) {
-                const compraRef = db.collection(COLECCION_PARTICIPANTES).doc(comprasOriginalIndividual);
-                const puntosActuales = participantesMap.get(comprasOriginalIndividual)?.puntos_compras || 0;
-                transaction.update(compraRef, {
-                    puntos_compras: Math.max(0, puntosActuales - 1)
-                });
-            }
-            
-            // Añadir puntos a nuevas compras
-            if (comprasNuevasCompartidas.size > 0) {
-                const puntoPorCompraNueva = 1 / comprasNuevasCompartidas.size;
-                
-                for (const compraId of comprasNuevasCompartidas) {
-                    const compraRef = db.collection(COLECCION_PARTICIPANTES).doc(compraId);
-                    const puntosActuales = participantesMap.get(compraId)?.puntos_compras || 0;
-                    transaction.update(compraRef, {
-                        puntos_compras: puntosActuales + puntoPorCompraNueva
-                    });
-                }
-            } else if (comprasNuevaIndividual) {
-                const compraRef = db.collection(COLECCION_PARTICIPANTES).doc(comprasNuevaIndividual);
-                const puntosActuales = participantesMap.get(comprasNuevaIndividual)?.puntos_compras || 0;
-                transaction.update(compraRef, {
-                    puntos_compras: puntosActuales + 1
-                });
-            }
-        });
+        // Iniciar transacción para redistribuir puntos
+        await redistribuirPuntos(wogId, originalWogData, wogData);
         
         // Mostrar mensaje de éxito
-        mostrarToast('WOG actualizado correctamente con redistribución de puntos');
+        mostrarToast('WOG actualizado correctamente');
         
         // Cerrar modal
         modalEditWog.style.display = 'none';
         
         // Disparar evento para actualizar otros módulos
         document.dispatchEvent(new CustomEvent('wogActualizado'));
-        
-        // Recargar historial
-        if (typeof cargarHistorialDirecto === 'function') {
-            setTimeout(cargarHistorialDirecto, 500);
-        }
         
     } catch (error) {
         console.error('Error al guardar WOG editado:', error);
@@ -700,17 +417,223 @@ async function saveEditedWog(event) {
     }
 }
 
-// Función para abrir el formulario de edición (para llamar desde app.js)
-function editarWogDirecto(wogId) {
-    // Inicializar el módulo si aún no se ha hecho
-    if (!modalEditWog) {
-        initWogEditModule();
+// Redistribuir puntos al editar un WOG
+async function redistribuirPuntos(wogId, datosOriginales, datosNuevos) {
+    try {
+        // Iniciar transacción para asegurar consistencia
+        await db.runTransaction(async transaction => {
+            // Referencia al documento del WOG
+            const wogRef = db.collection(COLECCION_WOGS).doc(wogId);
+            
+            // Actualizar documento del WOG
+            transaction.update(wogRef, datosNuevos);
+            
+            // 1. Redistribuir puntos de sede
+            if (datosOriginales.sede !== datosNuevos.sede) {
+                // Restar punto a la sede original
+                if (datosOriginales.sede) {
+                    const sedeOriginalRef = db.collection(COLECCION_PARTICIPANTES).doc(datosOriginales.sede);
+                    const sedeOriginalDoc = await transaction.get(sedeOriginalRef);
+                    
+                    if (sedeOriginalDoc.exists) {
+                        const puntosSede = sedeOriginalDoc.data().puntos_sede || 0;
+                        transaction.update(sedeOriginalRef, {
+                            puntos_sede: Math.max(0, puntosSede - 1)
+                        });
+                    }
+                }
+                
+                // Sumar punto a la nueva sede
+                const nuevaSedeRef = db.collection(COLECCION_PARTICIPANTES).doc(datosNuevos.sede);
+                const nuevaSedeDoc = await transaction.get(nuevaSedeRef);
+                
+                if (nuevaSedeDoc.exists) {
+                    const puntosSede = nuevaSedeDoc.data().puntos_sede || 0;
+                    transaction.update(nuevaSedeRef, {
+                        puntos_sede: puntosSede + 1
+                    });
+                }
+            }
+            
+            // 2. Redistribuir puntos de asador
+            const asadoresOriginales = datosOriginales.asadores || [];
+            const asadoresNuevos = datosNuevos.asadores || [];
+            
+            // Verificar si hubo cambios en los asadores
+            const cambioAsadores = asadoresOriginales.length !== asadoresNuevos.length ||
+                                  !asadoresOriginales.every(id => asadoresNuevos.includes(id));
+            
+            if (cambioAsadores) {
+                // Restar puntos a los asadores originales
+                if (asadoresOriginales.length > 0) {
+                    const puntoPorAsadorOriginal = 1 / asadoresOriginales.length;
+                    
+                    for (const asadorId of asadoresOriginales) {
+                        const asadorRef = db.collection(COLECCION_PARTICIPANTES).doc(asadorId);
+                        const asadorDoc = await transaction.get(asadorRef);
+                        
+                        if (asadorDoc.exists) {
+                            const puntosAsador = asadorDoc.data().puntos_asador || 0;
+                            transaction.update(asadorRef, {
+                                puntos_asador: Math.max(0, puntosAsador - puntoPorAsadorOriginal)
+                            });
+                        }
+                    }
+                }
+                
+                // Sumar puntos a los nuevos asadores
+                if (asadoresNuevos.length > 0) {
+                    const puntoPorAsadorNuevo = 1 / asadoresNuevos.length;
+                    
+                    for (const asadorId of asadoresNuevos) {
+                        const asadorRef = db.collection(COLECCION_PARTICIPANTES).doc(asadorId);
+                        const asadorDoc = await transaction.get(asadorRef);
+                        
+                        if (asadorDoc.exists) {
+                            const puntosAsador = asadorDoc.data().puntos_asador || 0;
+                            transaction.update(asadorRef, {
+                                puntos_asador: puntosAsador + puntoPorAsadorNuevo
+                            });
+                        }
+                    }
+                }
+            }
+            
+            // 3. Redistribuir puntos de compras
+            const comprasOriginales = datosOriginales.compras;
+            const comprasNuevas = datosNuevos.compras;
+            const comprasCompartidasOriginales = datosOriginales.comprasCompartidas || [];
+            const comprasCompartidasNuevas = datosNuevos.comprasCompartidas || [];
+            
+            // Caso A: Antes era compra individual, ahora también es individual pero diferente persona
+            if (comprasOriginales && comprasNuevas && comprasOriginales !== comprasNuevas) {
+                // Restar punto al responsable original
+                const compraOriginalRef = db.collection(COLECCION_PARTICIPANTES).doc(comprasOriginales);
+                const compraOriginalDoc = await transaction.get(compraOriginalRef);
+                
+                if (compraOriginalDoc.exists) {
+                    const puntosCompras = compraOriginalDoc.data().puntos_compras || 0;
+                    transaction.update(compraOriginalRef, {
+                        puntos_compras: Math.max(0, puntosCompras - 1)
+                    });
+                }
+                
+                // Sumar punto al nuevo responsable
+                const compraNuevaRef = db.collection(COLECCION_PARTICIPANTES).doc(comprasNuevas);
+                const compraNuevaDoc = await transaction.get(compraNuevaRef);
+                
+                if (compraNuevaDoc.exists) {
+                    const puntosCompras = compraNuevaDoc.data().puntos_compras || 0;
+                    transaction.update(compraNuevaRef, {
+                        puntos_compras: puntosCompras + 1
+                    });
+                }
+            }
+            
+            // Caso B: Antes era compra individual, ahora es compartida
+            else if (comprasOriginales && comprasCompartidasNuevas.length > 0) {
+                // Restar punto al responsable original
+                const compraOriginalRef = db.collection(COLECCION_PARTICIPANTES).doc(comprasOriginales);
+                const compraOriginalDoc = await transaction.get(compraOriginalRef);
+                
+                if (compraOriginalDoc.exists) {
+                    const puntosCompras = compraOriginalDoc.data().puntos_compras || 0;
+                    transaction.update(compraOriginalRef, {
+                        puntos_compras: Math.max(0, puntosCompras - 1)
+                    });
+                }
+                
+                // Sumar puntos compartidos a los nuevos responsables
+                const puntoPorCompra = 1 / comprasCompartidasNuevas.length;
+                
+                for (const compraId of comprasCompartidasNuevas) {
+                    const compraRef = db.collection(COLECCION_PARTICIPANTES).doc(compraId);
+                    const compraDoc = await transaction.get(compraRef);
+                    
+                    if (compraDoc.exists) {
+                        const puntosCompras = compraDoc.data().puntos_compras || 0;
+                        transaction.update(compraRef, {
+                            puntos_compras: puntosCompras + puntoPorCompra
+                        });
+                    }
+                }
+            }
+            
+            // Caso C: Antes era compra compartida, ahora es individual
+            else if (comprasCompartidasOriginales.length > 0 && comprasNuevas) {
+                // Restar puntos a los responsables originales
+                const puntoPorCompraOriginal = 1 / comprasCompartidasOriginales.length;
+                
+                for (const compraId of comprasCompartidasOriginales) {
+                    const compraRef = db.collection(COLECCION_PARTICIPANTES).doc(compraId);
+                    const compraDoc = await transaction.get(compraRef);
+                    
+                    if (compraDoc.exists) {
+                        const puntosCompras = compraDoc.data().puntos_compras || 0;
+                        transaction.update(compraRef, {
+                            puntos_compras: Math.max(0, puntosCompras - puntoPorCompraOriginal)
+                        });
+                    }
+                }
+                
+                // Sumar punto al nuevo responsable individual
+                const compraNuevaRef = db.collection(COLECCION_PARTICIPANTES).doc(comprasNuevas);
+                const compraNuevaDoc = await transaction.get(compraNuevaRef);
+                
+                if (compraNuevaDoc.exists) {
+                    const puntosCompras = compraNuevaDoc.data().puntos_compras || 0;
+                    transaction.update(compraNuevaRef, {
+                        puntos_compras: puntosCompras + 1
+                    });
+                }
+            }
+            
+            // Caso D: Antes era compra compartida, ahora también es compartida pero cambiaron las personas
+            else if (comprasCompartidasOriginales.length > 0 && comprasCompartidasNuevas.length > 0) {
+                // Verificar si hay cambios en las compras compartidas
+                const cambioComprasCompartidas = comprasCompartidasOriginales.length !== comprasCompartidasNuevas.length ||
+                                               !comprasCompartidasOriginales.every(id => comprasCompartidasNuevas.includes(id));
+                
+                if (cambioComprasCompartidas) {
+                    // Restar puntos a los responsables originales
+                    const puntoPorCompraOriginal = 1 / comprasCompartidasOriginales.length;
+                    
+                    for (const compraId of comprasCompartidasOriginales) {
+                        const compraRef = db.collection(COLECCION_PARTICIPANTES).doc(compraId);
+                        const compraDoc = await transaction.get(compraRef);
+                        
+                        if (compraDoc.exists) {
+                            const puntosCompras = compraDoc.data().puntos_compras || 0;
+                            transaction.update(compraRef, {
+                                puntos_compras: Math.max(0, puntosCompras - puntoPorCompraOriginal)
+                            });
+                        }
+                    }
+                    
+                    // Sumar puntos a los nuevos responsables
+                    const puntoPorCompraNueva = 1 / comprasCompartidasNuevas.length;
+                    
+                    for (const compraId of comprasCompartidasNuevas) {
+                        const compraRef = db.collection(COLECCION_PARTICIPANTES).doc(compraId);
+                        const compraDoc = await transaction.get(compraRef);
+                        
+                        if (compraDoc.exists) {
+                            const puntosCompras = compraDoc.data().puntos_compras || 0;
+                            transaction.update(compraRef, {
+                                puntos_compras: puntosCompras + puntoPorCompraNueva
+                            });
+                        }
+                    }
+                }
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error en la transacción de redistribución de puntos:', error);
+        throw error; // Propagar el error para manejarlo en el llamador
     }
-    
-    // Abrir modal de edición con los datos del WOG
-    editWog(wogId);
 }
 
-// Exportar funciones necesarias al alcance global
-window.editWog = editWog;
+// Exportar funciones necesarias
 window.initWogEditModule = initWogEditModule;
+window.editarWog = editarWog;
