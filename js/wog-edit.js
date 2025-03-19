@@ -712,5 +712,5 @@ function editarWogDirecto(wogId) {
 }
 
 // Exportar funciones necesarias al alcance global
-window.editarWogDirecto = editarWogDirecto;
+window.editWog = editWog;
 window.initWogEditModule = initWogEditModule;
