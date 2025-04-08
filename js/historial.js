@@ -1,37 +1,16 @@
 // Módulo para gestionar el historial de WOGs
 
-// Referencias a elementos del DOM (sin declarar inicialmente)
-let historialContainer;
-let modalConfirmacion;
-let modalConfirmacionTitulo;
-let modalConfirmacionMensaje;
-let btnConfirmarAccion;
-let btnCancelarConfirmacion;
-let modalNotas;
-let modalNotasTitulo;
-let modalNotasContenido;
-let btnCerrarNotas;
-
-// Variable para almacenar el ID del WOG a eliminar
+// Variables locales al módulo
 let wogAEliminar = null;
 
 // Inicializar módulo
 function initHistorialModule() {
     console.log('Inicializando módulo de historial...');
     
-    // Obtener referencias a elementos del DOM
-    historialContainer = document.getElementById('historial-container');
-    modalConfirmacion = document.getElementById('modal-confirmacion');
-    modalConfirmacionTitulo = document.getElementById('modal-confirmacion-titulo');
-    modalConfirmacionMensaje = document.getElementById('modal-confirmacion-mensaje');
-    btnConfirmarAccion = document.getElementById('btn-confirmar-accion');
-    btnCancelarConfirmacion = document.getElementById('btn-cancelar-confirmacion');
-    modalNotas = document.getElementById('modal-notas');
-    modalNotasTitulo = document.getElementById('modal-notas-titulo');
-    modalNotasContenido = document.getElementById('modal-notas-contenido');
-    btnCerrarNotas = document.getElementById('btn-cerrar-notas');
+    // Obtener referencias a elementos DOM
+    const historialContainer = document.getElementById('historial-container');
     
-    // Verificar elementos esenciales
+    // Verificar elemento esencial
     if (!historialContainer) {
         console.warn('Elemento historialContainer no encontrado');
         return;
@@ -48,14 +27,18 @@ function initHistorialModule() {
     });
     
     // Configurar botones de modales
+    const btnCancelarConfirmacion = document.getElementById('btn-cancelar-confirmacion');
     if (btnCancelarConfirmacion) {
         btnCancelarConfirmacion.addEventListener('click', function() {
+            const modalConfirmacion = document.getElementById('modal-confirmacion');
             if (modalConfirmacion) modalConfirmacion.style.display = 'none';
         });
     }
     
+    const btnCerrarNotas = document.getElementById('btn-cerrar-notas');
     if (btnCerrarNotas) {
         btnCerrarNotas.addEventListener('click', function() {
+            const modalNotas = document.getElementById('modal-notas');
             if (modalNotas) modalNotas.style.display = 'none';
         });
     }
@@ -65,6 +48,7 @@ function initHistorialModule() {
 
 // Función simplificada para cargar el historial
 async function cargarHistorialSimple() {
+    const historialContainer = document.getElementById('historial-container');
     if (!historialContainer) return;
     
     try {
@@ -160,7 +144,12 @@ async function cargarHistorialSimple() {
 // Mostrar notas de un WOG (versión simple)
 async function mostrarNotasWogSimple(wogId) {
     try {
-        // Verificar que los elementos del modal existan
+        // Obtener elementos del DOM
+        const modalNotas = document.getElementById('modal-notas');
+        const modalNotasTitulo = document.getElementById('modal-notas-titulo');
+        const modalNotasContenido = document.getElementById('modal-notas-contenido');
+        
+        // Verificar que los elementos existan
         if (!modalNotas || !modalNotasTitulo || !modalNotasContenido) {
             console.error('Elementos del modal de notas no encontrados');
             return;
@@ -170,7 +159,7 @@ async function mostrarNotasWogSimple(wogId) {
         const doc = await db.collection('wogs').doc(wogId).get();
         
         if (!doc.exists) {
-            mostrarToast('No se encontró el WOG', true);
+            window.mostrarToast('No se encontró el WOG', true);
             return;
         }
         
@@ -192,13 +181,19 @@ async function mostrarNotasWogSimple(wogId) {
         
     } catch (error) {
         console.error('Error al cargar notas:', error);
-        mostrarToast('Error al cargar notas del WOG', true);
+        window.mostrarToast('Error al cargar notas del WOG', true);
     }
 }
 
 // Confirmar eliminación de un WOG (versión simple)
 function confirmarEliminarWogSimple(id) {
-    // Verificar que los elementos del modal existan
+    // Obtener elementos del DOM
+    const modalConfirmacion = document.getElementById('modal-confirmacion');
+    const modalConfirmacionTitulo = document.getElementById('modal-confirmacion-titulo');
+    const modalConfirmacionMensaje = document.getElementById('modal-confirmacion-mensaje');
+    const btnConfirmarAccion = document.getElementById('btn-confirmar-accion');
+    
+    // Verificar que los elementos existan
     if (!modalConfirmacion || !modalConfirmacionTitulo || !modalConfirmacionMensaje || !btnConfirmarAccion) {
         console.error('Elementos del modal de confirmación no encontrados');
         return;
@@ -226,6 +221,10 @@ function confirmarEliminarWogSimple(id) {
 async function eliminarWogSimple() {
     if (!wogAEliminar) return;
     
+    // Obtener botón de confirmar
+    const btnConfirmarAccion = document.getElementById('btn-confirmar-accion');
+    const modalConfirmacion = document.getElementById('modal-confirmacion');
+    
     // Verificar que los elementos necesarios existan
     if (!btnConfirmarAccion) {
         console.error('Botón de confirmar acción no encontrado');
@@ -250,10 +249,12 @@ async function eliminarWogSimple() {
             } else {
                 console.warn('Función restarPuntuaciones no disponible');
             }
+            
+            // Eliminar el WOG
+            await docRef.delete();
+        } else {
+            console.warn('No se encontró el WOG a eliminar');
         }
-        
-        // Eliminar el WOG
-        await docRef.delete();
         
         // Cerrar modal
         if (modalConfirmacion) {
@@ -261,7 +262,7 @@ async function eliminarWogSimple() {
         }
         
         // Mostrar mensaje
-        mostrarToast('WOG eliminado correctamente');
+        window.mostrarToast('WOG eliminado correctamente');
         
         // Recargar historial
         cargarHistorialSimple();
@@ -271,7 +272,7 @@ async function eliminarWogSimple() {
         
     } catch (error) {
         console.error('Error al eliminar WOG:', error);
-        mostrarToast('Error al eliminar WOG: ' + error.message, true);
+        window.mostrarToast('Error al eliminar WOG: ' + error.message, true);
     } finally {
         // Restaurar botón
         if (btnConfirmarAccion) {
@@ -287,3 +288,4 @@ async function eliminarWogSimple() {
 // Exportar funciones necesarias al alcance global
 window.mostrarNotasWogSimple = mostrarNotasWogSimple;
 window.confirmarEliminarWogSimple = confirmarEliminarWogSimple;
+window.cargarHistorialSimple = cargarHistorialSimple;

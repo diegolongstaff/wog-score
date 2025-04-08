@@ -1,7 +1,7 @@
 // Módulo para gestionar los WOGs
 
 // Referencias a elementos del DOM
-const formNuevoWog = document.getElementById('nuevo-wog-form');
+let formNuevoWog;
 let fechaInput;
 let sedeSelect;
 let subsedeInput;
@@ -13,7 +13,7 @@ let asistentesLista;
 let notasInput;
 let btnAddAsador;
 
-// Función para formatear fecha para un input date
+// Función para formatear fecha para un input date (implementada localmente)
 function formatearFechaInput(fecha) {
     const year = fecha.getFullYear();
     const month = String(fecha.getMonth() + 1).padStart(2, '0');
@@ -25,7 +25,8 @@ function formatearFechaInput(fecha) {
 function initWogModule() {
     console.log('Inicializando módulo de WOGs...');
     
-    // Obtener referencias a los elementos (de manera segura)
+    // Obtener referencias a los elementos DOM
+    formNuevoWog = document.getElementById('nuevo-wog-form');
     fechaInput = document.getElementById('fecha');
     sedeSelect = document.getElementById('sede');
     subsedeInput = document.getElementById('subsede');
@@ -55,11 +56,13 @@ function initWogModule() {
         if (btnAddAsador) {
             btnAddAsador.addEventListener('click', agregarSelectorAsador);
         }
+    } else {
+        console.warn('Formulario de nuevo WOG no encontrado');
     }
     
     // Escuchar eventos de cambio de pestaña
-    document.addEventListener('tabChanged', ({ detail }) => {
-        if (detail.tabId === 'tab-nuevo') {
+    document.addEventListener('tabChanged', function(event) {
+        if (event.detail && event.detail.tabId === 'tab-nuevo') {
             cargarFormularioWog();
         }
     });
@@ -154,7 +157,9 @@ async function cargarFormularioWog() {
         
     } catch (error) {
         console.error('Error al cargar formulario de WOG:', error);
-        mostrarToast('Error al cargar participantes', true);
+        if (typeof window.mostrarToast === 'function') {
+            window.mostrarToast('Error al cargar participantes', true);
+        }
     }
 }
 
@@ -210,7 +215,9 @@ async function guardarWog(event) {
     try {
         // Verificar existencia de elementos
         if (!fechaInput || !sedeSelect || !subsedeInput || !notasInput || !asadoresContainer || !asistentesLista) {
-            mostrarToast('Error: Formulario incompleto', true);
+            if (typeof window.mostrarToast === 'function') {
+                window.mostrarToast('Error: Formulario incompleto', true);
+            }
             return;
         }
         
@@ -236,22 +243,30 @@ async function guardarWog(event) {
         
         // Validar datos obligatorios
         if (!fecha) {
-            mostrarToast('Debes seleccionar una fecha', true);
+            if (typeof window.mostrarToast === 'function') {
+                window.mostrarToast('Debes seleccionar una fecha', true);
+            }
             return;
         }
         
         if (!sede) {
-            mostrarToast('Debes seleccionar una sede', true);
+            if (typeof window.mostrarToast === 'function') {
+                window.mostrarToast('Debes seleccionar una sede', true);
+            }
             return;
         }
         
         if (asadores.length === 0) {
-            mostrarToast('Debes seleccionar al menos un asador', true);
+            if (typeof window.mostrarToast === 'function') {
+                window.mostrarToast('Debes seleccionar al menos un asador', true);
+            }
             return;
         }
         
         if (asistentes.length === 0) {
-            mostrarToast('Debes seleccionar al menos un asistente', true);
+            if (typeof window.mostrarToast === 'function') {
+                window.mostrarToast('Debes seleccionar al menos un asistente', true);
+            }
             return;
         }
         
@@ -294,7 +309,9 @@ async function guardarWog(event) {
             }
             
             if (comprasCompartidas.length === 0) {
-                mostrarToast('Debes seleccionar al menos un participante para compras compartidas', true);
+                if (typeof window.mostrarToast === 'function') {
+                    window.mostrarToast('Debes seleccionar al menos un participante para compras compartidas', true);
+                }
                 return;
             }
             
@@ -307,7 +324,9 @@ async function guardarWog(event) {
                 asistentes.push(comprasSelect.value);
             }
         } else {
-            mostrarToast('Debes seleccionar quién hizo las compras', true);
+            if (typeof window.mostrarToast === 'function') {
+                window.mostrarToast('Debes seleccionar quién hizo las compras', true);
+            }
             return;
         }
         
@@ -330,7 +349,9 @@ async function guardarWog(event) {
         }
         
         // Mostrar mensaje de éxito
-        mostrarToast('WOG registrado correctamente');
+        if (typeof window.mostrarToast === 'function') {
+            window.mostrarToast('WOG registrado correctamente');
+        }
         
         // Resetear formulario
         formNuevoWog.reset();
@@ -356,20 +377,47 @@ async function guardarWog(event) {
         // Disparar evento para actualizar otros módulos
         document.dispatchEvent(new CustomEvent('wogActualizado'));
         
-        // Redirigir a la pestaña de historial
-        if (typeof window.openTab === 'function') {
+        // Redirigir a la pestaña de historial (usando método seguro)
+        if (window.openTab) {
             window.openTab('tab-historial');
+        } else {
+            // Alternativa si openTab no está disponible
+            const historialTab = document.getElementById('tab-historial');
+            if (historialTab) {
+                // Mostrar tab de forma manual
+                document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+                historialTab.classList.add('active');
+                
+                // Activar botón
+                document.querySelectorAll('.tab-button').forEach(btn => {
+                    if (btn.getAttribute('onclick')?.includes('tab-historial')) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
+                
+                // Cargar historial si la función existe
+                if (typeof window.cargarHistorialSimple === 'function') {
+                    window.cargarHistorialSimple();
+                }
+            }
         }
         
     } catch (error) {
         console.error('Error al guardar WOG:', error);
-        mostrarToast('Error al guardar WOG: ' + error.message, true);
+        if (typeof window.mostrarToast === 'function') {
+            window.mostrarToast('Error al guardar WOG: ' + error.message, true);
+        }
     } finally {
         // Restaurar botón
-        const submitBtn = formNuevoWog.querySelector('button[type="submit"]');
+        const submitBtn = formNuevoWog?.querySelector('button[type="submit"]');
         if (submitBtn) {
             submitBtn.disabled = false;
             submitBtn.textContent = 'Guardar WOG';
         }
     }
 }
+
+// Exportamos la función de formatear fecha al ámbito global
+window.formatearFechaInputWog = formatearFechaInput;
