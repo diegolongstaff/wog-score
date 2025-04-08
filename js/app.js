@@ -20,6 +20,9 @@ function inicializarApp() {
     if (typeof initHistorialModule === 'function') initHistorialModule();
     if (typeof initWogEditModule === 'function') initWogEditModule();
     
+    // Inicializar puntos de asistencia para participantes existentes
+    if (typeof inicializarPuntosAsistencia === 'function') inicializarPuntosAsistencia();
+    
     // Configurar eventos globales
     configurarEventosGlobales();
     

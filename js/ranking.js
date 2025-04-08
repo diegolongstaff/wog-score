@@ -103,6 +103,9 @@ async function cargarRanking() {
                             <i class="fas fa-shopping-basket"></i> ${(participante.puntos_compras || 0).toFixed(1)}
                         </div>
                         <div class="ranking-stat">
+                            <i class="fas fa-users"></i> ${(participante.puntos_asistencia || 0).toFixed(1)}
+                        </div>
+                        <div class="ranking-stat">
                             <i class="fas fa-calendar-check"></i> ${participante.porcentajeAsistencia}%
                         </div>
                     </div>
@@ -195,9 +198,7 @@ async function cargarDatosCompletos() {
             });
             
             // Calcular estadísticas
-            const puntosTotales = (data.puntos_sede || 0) + 
-                                  (data.puntos_asador || 0) + 
-                                  (data.puntos_compras || 0);
+            const puntosTotales = calcularPuntosTotales(data);
             
             const porcentajeAsistencia = totalWogs > 0 
                 ? Math.round((totalAsistencias / totalWogs) * 100) 
@@ -329,6 +330,11 @@ function mostrarDetalleParticipante(participante) {
                 </div>
                 
                 <div class="participante-detalle-stat">
+                    <div class="valor">${(participante.puntos_asistencia || 0).toFixed(1)}</div>
+                    <div class="etiqueta">Puntos Asistencia</div>
+                </div>
+                
+                <div class="participante-detalle-stat">
                     <div class="valor">${porcentajeContribucionGlobal}%</div>
                     <div class="etiqueta">% del Total</div>
                 </div>
@@ -376,6 +382,3 @@ function mostrarDetalleParticipante(participante) {
     // Mostrar modal
     modalParticipanteDetalle.style.display = 'block';
 }
-
-// Exportar funciones necesarias
-window.initRankingModule = initRankingModule;

@@ -265,7 +265,7 @@ async function guardarWog(event) {
         // Guardar en Firestore
         await db.collection(COLECCION_WOGS).add(wogData);
         
-        // Actualizar puntos de los participantes
+        // Actualizar puntos de los participantes (ahora usando la función de puntuacion.js)
         await actualizarPuntuaciones(wogData);
         
         // Mostrar mensaje de éxito
@@ -300,53 +300,3 @@ async function guardarWog(event) {
         submitBtn.textContent = 'Guardar WOG';
     }
 }
-
-// Actualizar puntuaciones de participantes
-async function actualizarPuntuaciones(wogData) {
-    try {
-        // 1. Actualizar puntos por sede (1 punto)
-        if (wogData.sede) {
-            const sedeRef = db.collection(COLECCION_PARTICIPANTES).doc(wogData.sede);
-            await sedeRef.update({
-                puntos_sede: firebase.firestore.FieldValue.increment(1)
-            });
-        }
-        
-        // 2. Actualizar puntos por asador (1 punto dividido entre todos los asadores)
-        if (wogData.asadores && wogData.asadores.length > 0) {
-            const puntoPorAsador = 1 / wogData.asadores.length;
-            
-            for (const asadorId of wogData.asadores) {
-                const asadorRef = db.collection(COLECCION_PARTICIPANTES).doc(asadorId);
-                await asadorRef.update({
-                    puntos_asador: firebase.firestore.FieldValue.increment(puntoPorAsador)
-                });
-            }
-        }
-        
-        // 3. Actualizar puntos por compras (1 punto)
-        if (wogData.comprasCompartidas && wogData.comprasCompartidas.length > 0) {
-            const puntoPorCompra = 1 / wogData.comprasCompartidas.length;
-            
-            for (const compraId of wogData.comprasCompartidas) {
-                const compraRef = db.collection(COLECCION_PARTICIPANTES).doc(compraId);
-                await compraRef.update({
-                    puntos_compras: firebase.firestore.FieldValue.increment(puntoPorCompra)
-                });
-            }
-        } else if (wogData.compras) {
-            const compraRef = db.collection(COLECCION_PARTICIPANTES).doc(wogData.compras);
-            await compraRef.update({
-                puntos_compras: firebase.firestore.FieldValue.increment(1)
-            });
-        }
-    } catch (error) {
-        console.error('Error al actualizar puntuaciones:', error);
-        // Este error no debería detener el proceso de guardar el WOG
-    }
-}
-
-// Exportar funciones necesarias
-window.initWogModule = initWogModule;
-window.toggleComprasCompartidas = toggleComprasCompartidas;
-window.agregarSelectorAsador = agregarSelectorAsador;
