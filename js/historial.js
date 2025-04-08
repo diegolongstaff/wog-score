@@ -1,6 +1,6 @@
 // Módulo para gestionar el historial de WOGs
 
-// Referencias a elementos del DOM
+// Referencias a elementos del DOM (sin declarar inicialmente)
 let historialContainer;
 let modalConfirmacion;
 let modalConfirmacionTitulo;

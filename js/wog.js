@@ -13,6 +13,14 @@ let asistentesLista;
 let notasInput;
 let btnAddAsador;
 
+// Función para formatear fecha para un input date
+function formatearFechaInput(fecha) {
+    const year = fecha.getFullYear();
+    const month = String(fecha.getMonth() + 1).padStart(2, '0');
+    const day = String(fecha.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 // Inicializar módulo
 function initWogModule() {
     console.log('Inicializando módulo de WOGs...');
@@ -349,7 +357,9 @@ async function guardarWog(event) {
         document.dispatchEvent(new CustomEvent('wogActualizado'));
         
         // Redirigir a la pestaña de historial
-        openTab('tab-historial');
+        if (typeof window.openTab === 'function') {
+            window.openTab('tab-historial');
+        }
         
     } catch (error) {
         console.error('Error al guardar WOG:', error);
