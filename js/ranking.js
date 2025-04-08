@@ -1,9 +1,9 @@
 // Módulo para gestionar el ranking de participantes
 
 // Referencias a elementos del DOM
-const rankingContainer = document.getElementById('ranking-container');
-const modalParticipanteDetalle = document.getElementById('modal-participante-detalle');
-const participanteDetalleContenido = document.getElementById('participante-detalle-contenido');
+let rankingContainer;
+let modalParticipanteDetalle;
+let participanteDetalleContenido;
 
 // Cache para almacenar información de participantes y WOGs
 let participantesDetallados = [];
@@ -12,6 +12,17 @@ let wogsCache = [];
 // Inicializar módulo
 function initRankingModule() {
     console.log('Inicializando módulo de ranking...');
+    
+    // Obtener referencias a los elementos DOM
+    rankingContainer = document.getElementById('ranking-container');
+    modalParticipanteDetalle = document.getElementById('modal-participante-detalle');
+    participanteDetalleContenido = document.getElementById('participante-detalle-contenido');
+    
+    // Verificar que los elementos existen
+    if (!rankingContainer) {
+        console.warn('Contenedor de ranking no encontrado');
+        return;
+    }
     
     // Cargar ranking inmediatamente
     cargarRanking();
@@ -27,17 +38,22 @@ function initRankingModule() {
     document.addEventListener('wogActualizado', cargarRanking);
     document.addEventListener('participantesActualizados', cargarRanking);
     
-    // Configurar cierre del modal de detalle
-    document.querySelector('#modal-participante-detalle .close-modal').addEventListener('click', () => {
-        modalParticipanteDetalle.style.display = 'none';
-    });
-    
-    // Cerrar modal al hacer clic fuera
-    window.addEventListener('click', (event) => {
-        if (event.target === modalParticipanteDetalle) {
-            modalParticipanteDetalle.style.display = 'none';
+    // Configurar cierre del modal de detalle si existe
+    if (modalParticipanteDetalle) {
+        const closeButton = modalParticipanteDetalle.querySelector('.close-modal');
+        if (closeButton) {
+            closeButton.addEventListener('click', () => {
+                modalParticipanteDetalle.style.display = 'none';
+            });
         }
-    });
+        
+        // Cerrar modal al hacer clic fuera
+        window.addEventListener('click', (event) => {
+            if (event.target === modalParticipanteDetalle) {
+                modalParticipanteDetalle.style.display = 'none';
+            }
+        });
+    }
     
     console.log('Módulo de ranking inicializado correctamente');
 }
@@ -45,6 +61,8 @@ function initRankingModule() {
 // Cargar ranking de participantes
 async function cargarRanking() {
     try {
+        if (!rankingContainer) return;
+        
         console.log('Cargando ranking...');
         
         // Mostrar loader
@@ -80,7 +98,7 @@ async function cargarRanking() {
             rankingItem.className = 'ranking-item';
             rankingItem.setAttribute('data-id', participante.id);
             
-            // HTML del elemento
+            // HTML del elemento (con el nuevo campo de puntos de asistencia)
             rankingItem.innerHTML = `
                 <div class="ranking-position position-${index < 3 ? index + 1 : 'other'}">${index + 1}</div>
                 
@@ -103,10 +121,7 @@ async function cargarRanking() {
                             <i class="fas fa-shopping-basket"></i> ${(participante.puntos_compras || 0).toFixed(1)}
                         </div>
                         <div class="ranking-stat">
-                            <i class="fas fa-users"></i> ${(participante.puntos_asistencia || 0).toFixed(1)}
-                        </div>
-                        <div class="ranking-stat">
-                            <i class="fas fa-calendar-check"></i> ${participante.porcentajeAsistencia}%
+                            <i class="fas fa-user-check"></i> ${(participante.puntos_asistencia || 0).toFixed(1)}
                         </div>
                     </div>
                 </div>
@@ -161,7 +176,7 @@ async function cargarDatosCompletos() {
         const totalWogs = wogsCache.length;
         
         // Procesar participantes
-        participantesDetallados = participantesSnapshot.docs.map(doc => {
+        participantesDetallados = participantesSnapshot.docs.map(function(doc) {
             const data = doc.data();
             const id = doc.id;
             
@@ -197,8 +212,11 @@ async function cargarDatosCompletos() {
                 }
             });
             
-            // Calcular estadísticas
-            const puntosTotales = calcularPuntosTotales(data);
+            // Calcular estadísticas incluyendo puntos de asistencia
+            const puntosTotales = (data.puntos_sede || 0) + 
+                                 (data.puntos_asador || 0) + 
+                                 (data.puntos_compras || 0) +
+                                 (data.puntos_asistencia || 0);
             
             const porcentajeAsistencia = totalWogs > 0 
                 ? Math.round((totalAsistencias / totalWogs) * 100) 
@@ -240,145 +258,4 @@ async function cargarDatosCompletos() {
         console.error('Error al cargar datos completos:', error);
         throw error;
     }
-}
-
-// Mostrar detalle completo de un participante
-function mostrarDetalleParticipante(participante) {
-    console.log('Mostrando detalle de participante:', participante.nombre);
-    
-    // Calcular estadísticas adicionales
-    const totalWogs = wogsCache.length;
-    
-    // Calcular porcentaje de contribución al total de puntos
-    const totalPuntosGlobales = participantesDetallados.reduce(
-        (sum, p) => sum + p.puntosTotales, 0
-    );
-    
-    const porcentajeContribucionGlobal = totalPuntosGlobales > 0 
-        ? Math.round((participante.puntosTotales / totalPuntosGlobales) * 100) 
-        : 0;
-    
-    // Encontrar la posición en el ranking
-    const posicionRanking = participantesDetallados.findIndex(p => p.id === participante.id) + 1;
-    
-    // Calcular racha actual
-    let rachaActual = 0;
-    const wogsOrdenados = [...wogsCache].sort((a, b) => {
-        const fechaA = a.fecha.toDate ? a.fecha.toDate() : new Date(a.fecha);
-        const fechaB = b.fecha.toDate ? b.fecha.toDate() : new Date(b.fecha);
-        return fechaB - fechaA; // Más recientes primero
-    });
-    
-    for (const wog of wogsOrdenados) {
-        if (wog.asistentes && wog.asistentes.includes(participante.id)) {
-            rachaActual++;
-        } else {
-            break;
-        }
-    }
-    
-    // Generar HTML para el detalle
-    participanteDetalleContenido.innerHTML = `
-        <div class="participante-detalle-header">
-            ${participante.imagen_url 
-                ? `<img src="${participante.imagen_url}" alt="${participante.nombre}">`
-                : `<div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--color-primary); display: flex; align-items: center; justify-content: center; font-size: 5rem; color: white;">${obtenerIniciales(participante.nombre)}</div>`}
-            
-            <div class="overlay">
-                <h2>${participante.nombre}</h2>
-                ${participante.apodo && participante.apodo !== participante.nombre 
-                    ? `<div class="apodo">${participante.apodo}</div>`
-                    : ''}
-            </div>
-        </div>
-        
-        <div class="participante-detalle-body">
-            <div class="participante-detalle-stats">
-                <div class="participante-detalle-stat">
-                    <div class="valor">${participante.puntosTotales.toFixed(1)}</div>
-                    <div class="etiqueta">Puntos Totales</div>
-                </div>
-                
-                <div class="participante-detalle-stat">
-                    <div class="valor">${posicionRanking}°</div>
-                    <div class="etiqueta">Ranking</div>
-                </div>
-                
-                <div class="participante-detalle-stat">
-                    <div class="valor">${participante.totalAsistencias}</div>
-                    <div class="etiqueta">Asistencias</div>
-                </div>
-                
-                <div class="participante-detalle-stat">
-                    <div class="valor">${participante.porcentajeAsistencia}%</div>
-                    <div class="etiqueta">% Asistencia</div>
-                </div>
-                
-                <div class="participante-detalle-stat">
-                    <div class="valor">${participante.vecesSede}</div>
-                    <div class="etiqueta">Veces Sede</div>
-                </div>
-                
-                <div class="participante-detalle-stat">
-                    <div class="valor">${participante.vecesAsador + participante.asadorCompartido}</div>
-                    <div class="etiqueta">Veces Asador</div>
-                </div>
-                
-                <div class="participante-detalle-stat">
-                    <div class="valor">${participante.vecesCompras + participante.comprasCompartido}</div>
-                    <div class="etiqueta">Veces Compras</div>
-                </div>
-                
-                <div class="participante-detalle-stat">
-                    <div class="valor">${(participante.puntos_asistencia || 0).toFixed(1)}</div>
-                    <div class="etiqueta">Puntos Asistencia</div>
-                </div>
-                
-                <div class="participante-detalle-stat">
-                    <div class="valor">${porcentajeContribucionGlobal}%</div>
-                    <div class="etiqueta">% del Total</div>
-                </div>
-                
-                <div class="participante-detalle-stat">
-                    <div class="valor">${rachaActual}</div>
-                    <div class="etiqueta">Racha Actual</div>
-                </div>
-            </div>
-            
-            <h3 style="margin-top: 20px; margin-bottom: 15px;">Contribución por Rol</h3>
-            
-            <div class="participante-grafico">
-                <div class="barra-grafico">
-                    <div class="barra-grafico-fill" style="width: ${participante.porcentajeSede}%;"></div>
-                    <div class="barra-grafico-label">Sede</div>
-                    <div class="barra-grafico-value">${participante.porcentajeSede}%</div>
-                </div>
-                
-                <div class="barra-grafico">
-                    <div class="barra-grafico-fill" style="width: ${participante.porcentajeAsador}%;"></div>
-                    <div class="barra-grafico-label">Asador</div>
-                    <div class="barra-grafico-value">${participante.porcentajeAsador}%</div>
-                </div>
-                
-                <div class="barra-grafico">
-                    <div class="barra-grafico-fill" style="width: ${participante.porcentajeCompras}%;"></div>
-                    <div class="barra-grafico-label">Compras</div>
-                    <div class="barra-grafico-value">${participante.porcentajeCompras}%</div>
-                </div>
-                
-                <div class="barra-grafico">
-                    <div class="barra-grafico-fill" style="width: ${participante.porcentajeAsistencia}%;"></div>
-                    <div class="barra-grafico-label">Asistencia</div>
-                    <div class="barra-grafico-value">${participante.porcentajeAsistencia}%</div>
-                </div>
-            </div>
-            
-            <div style="margin-top: 20px; font-size: 0.9rem; color: #777; text-align: center;">
-                * Los porcentajes de roles se calculan respecto al total de asistencias
-            </div>
-        </div>
-    `;
-    
-    // Mostrar modal
-    modalParticipanteDetalle.style.display = 'block';
 }

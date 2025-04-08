@@ -7,21 +7,18 @@ document.addEventListener('DOMContentLoaded', inicializarApp);
 function inicializarApp() {
     console.log('Inicializando WOG Score App...');
     
-    // Configurar navegación por pestañas
+    // Configurar navegación por pestañas (simplificado)
     configurarNavegacionSimple();
     
     // Cargar datos iniciales del dashboard
     cargarDashboard();
     
-    // Inicializar controladores de módulos
+    // Inicializar controladores de módulos (en orden correcto)
+    if (typeof initPuntuacionModule === 'function') initPuntuacionModule();
     if (typeof initParticipantesModule === 'function') initParticipantesModule();
     if (typeof initWogModule === 'function') initWogModule();
     if (typeof initRankingModule === 'function') initRankingModule();
     if (typeof initHistorialModule === 'function') initHistorialModule();
-    if (typeof initWogEditModule === 'function') initWogEditModule();
-    
-    // Inicializar puntos de asistencia para participantes existentes
-    if (typeof inicializarPuntosAsistencia === 'function') inicializarPuntosAsistencia();
     
     // Configurar eventos globales
     configurarEventosGlobales();
@@ -62,12 +59,17 @@ function openTab(tabId) {
     if (tabElement) {
         tabElement.classList.add('active');
         
-        // Activar el botón correspondiente
+        // Activar el botón correspondiente (de manera simplificada)
         document.querySelectorAll('.tab-button').forEach(button => {
             if (button.getAttribute('onclick')?.includes(tabId)) {
                 button.classList.add('active');
             }
         });
+        
+        // Cargar historial específicamente cuando se abre esa pestaña
+        if (tabId === 'tab-historial') {
+            cargarHistorialDirecto();
+        }
         
         // Disparar evento cambio de pestaña
         document.dispatchEvent(new CustomEvent('tabChanged', { detail: { tabId } }));
@@ -79,19 +81,35 @@ function openTab(tabId) {
 // Cargar datos para el dashboard inicial
 async function cargarDashboard() {
     try {
+        // Verificar que los elementos del DOM existen
+        if (!document.getElementById('total-wogs') && 
+            !document.getElementById('total-participantes') && 
+            !document.getElementById('current-leader') && 
+            !document.getElementById('next-wog')) {
+            console.warn('Elementos del dashboard no encontrados');
+            return;
+        }
+        
         // Obtener conteo de WOGs
         const wogsSnapshot = await db.collection(COLECCION_WOGS).get();
         
-        // Añadir enlace al historial
-        document.getElementById('total-wogs').innerHTML = `
-            <a href="#" onclick="openTab('tab-historial'); return false;" class="dashboard-link">
-                ${wogsSnapshot.size}
-            </a>
-        `;
+        // Verificar si el elemento existe
+        const totalWogs = document.getElementById('total-wogs');
+        if (totalWogs) {
+            // Añadir enlace al historial
+            totalWogs.innerHTML = `
+                <a href="#" onclick="openTab('tab-historial'); return false;" class="dashboard-link">
+                    ${wogsSnapshot.size}
+                </a>
+            `;
+        }
         
         // Obtener conteo de participantes
         const participantesSnapshot = await db.collection(COLECCION_PARTICIPANTES).get();
-        document.getElementById('total-participantes').textContent = participantesSnapshot.size;
+        const totalParticipantes = document.getElementById('total-participantes');
+        if (totalParticipantes) {
+            totalParticipantes.textContent = participantesSnapshot.size;
+        }
         
         // Calcular líder (participante con más puntos)
         if (participantesSnapshot.size > 0) {
@@ -100,10 +118,11 @@ async function cargarDashboard() {
             
             for (const doc of participantesSnapshot.docs) {
                 const participante = doc.data();
-                // Sumar puntos (sede + asador + compras)
+                // Sumar todos los tipos de puntos
                 const puntos = (participante.puntos_sede || 0) + 
                                (participante.puntos_asador || 0) + 
-                               (participante.puntos_compras || 0);
+                               (participante.puntos_compras || 0) +
+                               (participante.puntos_asistencia || 0);
                 
                 if (puntos > maxPuntos) {
                     maxPuntos = puntos;
@@ -111,8 +130,10 @@ async function cargarDashboard() {
                 }
             }
             
-            if (lider) {
-                document.getElementById('current-leader').innerHTML = `
+            // Verificar si el elemento existe
+            const currentLeader = document.getElementById('current-leader');
+            if (currentLeader && lider) {
+                currentLeader.innerHTML = `
                     <a href="#" onclick="openTab('tab-ranking'); return false;" class="dashboard-link">
                         ${lider}
                     </a>
@@ -131,158 +152,15 @@ async function cargarDashboard() {
         // Formatear fecha
         const opciones = { weekday: 'long', day: 'numeric', month: 'long' };
         const fechaFormateada = proximoMartes.toLocaleDateString('es-ES', opciones);
-        document.getElementById('next-wog').textContent = fechaFormateada;
+        
+        // Verificar si el elemento existe
+        const nextWog = document.getElementById('next-wog');
+        if (nextWog) {
+            nextWog.textContent = fechaFormateada;
+        }
         
     } catch (error) {
         console.error('Error al cargar datos del dashboard:', error);
         mostrarToast('Error al cargar datos iniciales');
     }
 }
-
-// Configurar eventos globales
-function configurarEventosGlobales() {
-    // Configurar cierre de modales
-    document.querySelectorAll('.close-modal').forEach(closeBtn => {
-        closeBtn.addEventListener('click', function() {
-            const modal = this.closest('.modal');
-            if (modal) {
-                modal.style.display = 'none';
-            }
-        });
-    });
-    
-    // Cerrar modales al hacer clic fuera de ellos
-    window.addEventListener('click', function(event) {
-        document.querySelectorAll('.modal').forEach(modal => {
-            if (event.target === modal) {
-                modal.style.display = 'none';
-            }
-        });
-    });
-    
-    // Configuración adicional para modal de notas
-    const btnCerrarNotas = document.getElementById('btn-cerrar-notas');
-    if (btnCerrarNotas) {
-        btnCerrarNotas.addEventListener('click', () => {
-            document.getElementById('modal-notas').style.display = 'none';
-        });
-    }
-    
-    // Configuración para modal de edición de WOG
-    const btnCancelarEdit = document.getElementById('btn-cancelar-edit');
-    if (btnCancelarEdit) {
-        btnCancelarEdit.addEventListener('click', () => {
-            document.getElementById('modal-edit-wog').style.display = 'none';
-        });
-    }
-    
-    // Escuchar eventos de actualización
-    document.addEventListener('participantesActualizados', cargarDashboard);
-    document.addEventListener('wogActualizado', cargarDashboard);
-}
-
-// Mostrar un mensaje toast
-function mostrarToast(mensaje, esError = false) {
-    const toast = document.getElementById('toast');
-    toast.textContent = mensaje;
-    toast.className = esError ? 'toast show error' : 'toast show';
-    
-    // Ocultar toast después de 3 segundos
-    setTimeout(() => {
-        toast.className = toast.className.replace('show', '');
-    }, 3000);
-}
-
-// Formatear fecha para un input date
-function formatearFechaInput(fecha) {
-    const year = fecha.getFullYear();
-    const month = String(fecha.getMonth() + 1).padStart(2, '0');
-    const day = String(fecha.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-}
-
-// Formatear fecha para mostrar
-function formatearFecha(fecha, incluirDia = true) {
-    if (!fecha) return '';
-    
-    // Si es timestamp de Firestore, convertir a Date
-    if (fecha.toDate && typeof fecha.toDate === 'function') {
-        fecha = fecha.toDate();
-    }
-    
-    const opciones = incluirDia 
-        ? { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }
-        : { year: 'numeric', month: 'long', day: 'numeric' };
-    
-    return fecha.toLocaleDateString('es-ES', opciones);
-}
-
-// Obtener iniciales de un nombre
-function obtenerIniciales(nombre) {
-    if (!nombre) return '??';
-    return nombre
-        .split(' ')
-        .map(n => n[0])
-        .join('')
-        .substring(0, 2)
-        .toUpperCase();
-}
-
-// Comprimir imagen
-async function comprimirImagen(file, maxWidth = 800, quality = 0.7) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = function(event) {
-            const img = new Image();
-            img.src = event.target.result;
-            
-            img.onload = function() {
-                const canvas = document.createElement('canvas');
-                let width = img.width;
-                let height = img.height;
-                
-                // Redimensionar si es necesario
-                if (width > maxWidth) {
-                    height = (height * maxWidth) / width;
-                    width = maxWidth;
-                }
-                
-                canvas.width = width;
-                canvas.height = height;
-                
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-                
-                // Convertir a Blob con una calidad reducida
-                canvas.toBlob(
-                    (blob) => {
-                        if (blob) {
-                            resolve(blob);
-                        } else {
-                            reject(new Error('Error al comprimir la imagen'));
-                        }
-                    },
-                    file.type,
-                    quality // Calidad (0.7 = 70%)
-                );
-            };
-            
-            img.onerror = function() {
-                reject(new Error('Error al cargar la imagen'));
-            };
-        };
-        
-        reader.onerror = function() {
-            reject(new Error('Error al leer el archivo'));
-        };
-    });
-}
-
-// Exportar funciones globales a window
-window.openTab = openTab;
-window.mostrarToast = mostrarToast;
-window.formatearFecha = formatearFecha;
-window.formatearFechaInput = formatearFechaInput;
-window.obtenerIniciales = obtenerIniciales;
-window.comprimirImagen = comprimirImagen;

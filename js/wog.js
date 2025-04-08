@@ -2,29 +2,52 @@
 
 // Referencias a elementos del DOM
 const formNuevoWog = document.getElementById('nuevo-wog-form');
-const fechaInput = document.getElementById('fecha');
-const sedeSelect = document.getElementById('sede');
-const subsedeInput = document.getElementById('subsede');
-const comprasSelect = document.getElementById('compras');
-const comprasCompartidasDiv = document.getElementById('compras-compartidas');
-const comprasParticipantesDiv = document.getElementById('compras-participantes');
-const asadoresContainer = document.getElementById('asadores-container');
-const asistentesLista = document.getElementById('asistentes-lista');
-const notasInput = document.getElementById('notas');
-const btnAddAsador = document.getElementById('add-asador');
+let fechaInput;
+let sedeSelect;
+let subsedeInput;
+let comprasSelect;
+let comprasCompartidasDiv;
+let comprasParticipantesDiv;
+let asadoresContainer;
+let asistentesLista;
+let notasInput;
+let btnAddAsador;
 
 // Inicializar módulo
 function initWogModule() {
     console.log('Inicializando módulo de WOGs...');
     
-    // Establecer fecha actual por defecto
-    const hoy = new Date();
-    fechaInput.value = formatearFechaInput(hoy);
+    // Obtener referencias a los elementos (de manera segura)
+    fechaInput = document.getElementById('fecha');
+    sedeSelect = document.getElementById('sede');
+    subsedeInput = document.getElementById('subsede');
+    comprasSelect = document.getElementById('compras');
+    comprasCompartidasDiv = document.getElementById('compras-compartidas');
+    comprasParticipantesDiv = document.getElementById('compras-participantes');
+    asadoresContainer = document.getElementById('asadores-container');
+    asistentesLista = document.getElementById('asistentes-lista');
+    notasInput = document.getElementById('notas');
+    btnAddAsador = document.getElementById('add-asador');
     
-    // Configurar eventos
-    formNuevoWog.addEventListener('submit', guardarWog);
-    comprasSelect.addEventListener('change', toggleComprasCompartidas);
-    btnAddAsador.addEventListener('click', agregarSelectorAsador);
+    // Verificar que los elementos existen antes de configurar eventos
+    if (formNuevoWog) {
+        // Establecer fecha actual por defecto
+        if (fechaInput) {
+            const hoy = new Date();
+            fechaInput.value = formatearFechaInput(hoy);
+        }
+        
+        // Configurar eventos
+        formNuevoWog.addEventListener('submit', guardarWog);
+        
+        if (comprasSelect) {
+            comprasSelect.addEventListener('change', toggleComprasCompartidas);
+        }
+        
+        if (btnAddAsador) {
+            btnAddAsador.addEventListener('click', agregarSelectorAsador);
+        }
+    }
     
     // Escuchar eventos de cambio de pestaña
     document.addEventListener('tabChanged', ({ detail }) => {
@@ -42,6 +65,12 @@ function initWogModule() {
 // Cargar datos para el formulario de nuevo WOG
 async function cargarFormularioWog() {
     try {
+        // Verificar que los elementos del DOM existen
+        if (!sedeSelect || !comprasSelect || !asadoresContainer || !asistentesLista || !comprasParticipantesDiv) {
+            console.warn('Elementos del formulario WOG no encontrados');
+            return;
+        }
+        
         // Obtener participantes activos
         const snapshot = await db.collection(COLECCION_PARTICIPANTES)
             .where('activo', '==', true)
@@ -76,13 +105,15 @@ async function cargarFormularioWog() {
         
         // Llenar selector de asador
         const asadorSelect = asadoresContainer.querySelector('.asador-select');
-        asadorSelect.innerHTML = '<option value="">Seleccionar asador</option>';
-        participantes.forEach(p => {
-            const option = document.createElement('option');
-            option.value = p.id;
-            option.textContent = p.nombre;
-            asadorSelect.appendChild(option);
-        });
+        if (asadorSelect) {
+            asadorSelect.innerHTML = '<option value="">Seleccionar asador</option>';
+            participantes.forEach(p => {
+                const option = document.createElement('option');
+                option.value = p.id;
+                option.textContent = p.nombre;
+                asadorSelect.appendChild(option);
+            });
+        }
         
         // Llenar checkboxes de asistentes
         asistentesLista.innerHTML = '';
@@ -109,7 +140,9 @@ async function cargarFormularioWog() {
         });
         
         // Limpiar campo de notas
-        notasInput.value = '';
+        if (notasInput) {
+            notasInput.value = '';
+        }
         
     } catch (error) {
         console.error('Error al cargar formulario de WOG:', error);
@@ -119,6 +152,8 @@ async function cargarFormularioWog() {
 
 // Mostrar/ocultar sección de compras compartidas
 function toggleComprasCompartidas() {
+    if (!comprasSelect || !comprasCompartidasDiv) return;
+    
     if (comprasSelect.value === 'compartido') {
         comprasCompartidasDiv.style.display = 'block';
     } else {
@@ -128,12 +163,16 @@ function toggleComprasCompartidas() {
 
 // Agregar un selector de asador adicional
 function agregarSelectorAsador() {
+    if (!asadoresContainer) return;
+    
     // Crear contenedor para el nuevo selector
     const asadorItem = document.createElement('div');
     asadorItem.className = 'asador-item';
     
     // Clonar el primer selector de asador
     const templateSelect = asadoresContainer.querySelector('.asador-select');
+    if (!templateSelect) return;
+    
     const newSelect = templateSelect.cloneNode(true);
     newSelect.className = 'asador-select';
     newSelect.value = ''; // Resetear valor
@@ -161,6 +200,12 @@ async function guardarWog(event) {
     event.preventDefault();
     
     try {
+        // Verificar existencia de elementos
+        if (!fechaInput || !sedeSelect || !subsedeInput || !notasInput || !asadoresContainer || !asistentesLista) {
+            mostrarToast('Error: Formulario incompleto', true);
+            return;
+        }
+        
         // Recopilar datos del formulario
         const fecha = fechaInput.value;
         const sede = sedeSelect.value;
@@ -226,17 +271,19 @@ async function guardarWog(event) {
         };
         
         // Manejar compras (normal o compartidas)
-        if (comprasSelect.value === 'compartido') {
+        if (comprasSelect && comprasSelect.value === 'compartido') {
             // Obtener participantes seleccionados para compras compartidas
             const comprasCompartidas = [];
-            comprasParticipantesDiv.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
-                comprasCompartidas.push(checkbox.value);
-                
-                // Asegurar que estén en la lista de asistentes
-                if (!asistentes.includes(checkbox.value)) {
-                    asistentes.push(checkbox.value);
-                }
-            });
+            if (comprasParticipantesDiv) {
+                comprasParticipantesDiv.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
+                    comprasCompartidas.push(checkbox.value);
+                    
+                    // Asegurar que estén en la lista de asistentes
+                    if (!asistentes.includes(checkbox.value)) {
+                        asistentes.push(checkbox.value);
+                    }
+                });
+            }
             
             if (comprasCompartidas.length === 0) {
                 mostrarToast('Debes seleccionar al menos un participante para compras compartidas', true);
@@ -244,7 +291,7 @@ async function guardarWog(event) {
             }
             
             wogData.comprasCompartidas = comprasCompartidas;
-        } else if (comprasSelect.value) {
+        } else if (comprasSelect && comprasSelect.value) {
             wogData.compras = comprasSelect.value;
             
             // Asegurar que esté en la lista de asistentes
@@ -258,28 +305,42 @@ async function guardarWog(event) {
         
         // Cambiar botón a estado de carga
         const submitBtn = formNuevoWog.querySelector('button[type="submit"]');
-        const btnText = submitBtn.textContent;
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+        if (submitBtn) {
+            const btnText = submitBtn.textContent;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+        }
         
         // Guardar en Firestore
         await db.collection(COLECCION_WOGS).add(wogData);
         
-        // Actualizar puntos de los participantes (ahora usando la función de puntuacion.js)
-        await actualizarPuntuaciones(wogData);
+        // Actualizar puntos de los participantes usando el módulo de puntuación
+        if (typeof window.actualizarPuntuaciones === 'function') {
+            await window.actualizarPuntuaciones(wogData);
+        } else {
+            console.warn('Función actualizarPuntuaciones no disponible');
+        }
         
         // Mostrar mensaje de éxito
         mostrarToast('WOG registrado correctamente');
         
         // Resetear formulario
         formNuevoWog.reset();
-        fechaInput.value = formatearFechaInput(new Date());
-        comprasCompartidasDiv.style.display = 'none';
+        if (fechaInput) {
+            fechaInput.value = formatearFechaInput(new Date());
+        }
+        if (comprasCompartidasDiv) {
+            comprasCompartidasDiv.style.display = 'none';
+        }
         
         // Mantener solo un selector de asador
-        const primerAsador = asadoresContainer.querySelector('.asador-item');
-        asadoresContainer.innerHTML = '';
-        asadoresContainer.appendChild(primerAsador);
+        if (asadoresContainer) {
+            const primerAsador = asadoresContainer.querySelector('.asador-item');
+            if (primerAsador) {
+                asadoresContainer.innerHTML = '';
+                asadoresContainer.appendChild(primerAsador);
+            }
+        }
         
         // Recargar formulario
         cargarFormularioWog();
@@ -296,7 +357,9 @@ async function guardarWog(event) {
     } finally {
         // Restaurar botón
         const submitBtn = formNuevoWog.querySelector('button[type="submit"]');
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Guardar WOG';
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Guardar WOG';
+        }
     }
 }
