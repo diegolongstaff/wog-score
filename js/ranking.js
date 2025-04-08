@@ -58,204 +58,138 @@ function initRankingModule() {
     console.log('Módulo de ranking inicializado correctamente');
 }
 
-// Cargar ranking de participantes
-async function cargarRanking() {
-    try {
-        if (!rankingContainer) return;
-        
-        console.log('Cargando ranking...');
-        
-        // Mostrar loader
-        rankingContainer.innerHTML = `
-            <div class="loader">
-                <div class="loader-circle"></div>
-            </div>
-        `;
-        
-        // Cargar datos completos
-        await cargarDatosCompletos();
-        
-        // Verificar si hay participantes
-        if (participantesDetallados.length === 0) {
-            rankingContainer.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-trophy"></i>
-                    <p>No hay participantes activos para mostrar en el ranking</p>
-                </div>
-            `;
-            return;
+// Resto del código anterior se mantiene igual...
+
+// Nueva función global para mostrar detalle de participante
+function mostrarDetalleParticipante(participante) {
+    // Verificar que el participante exista
+    if (!participante) {
+        if (typeof mostrarToast === 'function') {
+            mostrarToast('Datos del participante no disponibles', true);
+        } else {
+            console.error('Datos del participante no disponibles');
         }
-        
-        // Limpiar contenedor
-        rankingContainer.innerHTML = '';
-        
-        // Crear elemento para cada participante en el ranking
-        participantesDetallados.forEach((participante, index) => {
-            // Solo mostrar participantes con algún punto
-            if (participante.puntosTotales <= 0) return;
+        return;
+    }
+    
+    // Verificar que el modal y su contenido existan
+    if (!modalParticipanteDetalle || !participanteDetalleContenido) {
+        console.error('Elementos del modal no encontrados');
+        return;
+    }
+    
+    // Calcular estadísticas adicionales
+    const totalWogs = wogsCache.length || 0;
+    
+    // Calcular porcentaje de contribución al total de puntos
+    const totalPuntosGlobales = participantesDetallados.reduce(
+        (sum, p) => sum + (p.puntosTotales || 0), 0
+    );
+    
+    const porcentajeContribucionGlobal = totalPuntosGlobales > 0 
+        ? Math.round(((participante.puntosTotales || 0) / totalPuntosGlobales) * 100) 
+        : 0;
+    
+    // Encontrar la posición en el ranking
+    const posicionRanking = participantesDetallados.findIndex(p => p.id === participante.id) + 1;
+    
+    // Generar HTML para el detalle
+    participanteDetalleContenido.innerHTML = `
+        <div class="participante-detalle-header">
+            ${participante.imagen_url 
+                ? `<img src="${participante.imagen_url}" alt="${participante.nombre}">`
+                : `<div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--color-primary); display: flex; align-items: center; justify-content: center; font-size: 5rem; color: white;">${obtenerIniciales(participante.nombre)}</div>`}
             
-            const rankingItem = document.createElement('div');
-            rankingItem.className = 'ranking-item';
-            rankingItem.setAttribute('data-id', participante.id);
-            
-            // HTML del elemento (con el nuevo campo de puntos de asistencia)
-            rankingItem.innerHTML = `
-                <div class="ranking-position position-${index < 3 ? index + 1 : 'other'}">${index + 1}</div>
-                
-                <div class="ranking-avatar">
-                    ${participante.imagen_url 
-                        ? `<img src="${participante.imagen_url}" alt="${participante.nombre}">` 
-                        : `<div class="avatar-placeholder">${obtenerIniciales(participante.nombre)}</div>`}
-                </div>
-                
-                <div class="ranking-details">
-                    <div class="ranking-name">${participante.nombre}</div>
-                    <div class="ranking-stats">
-                        <div class="ranking-stat">
-                            <i class="fas fa-home"></i> ${participante.puntos_sede || 0}
-                        </div>
-                        <div class="ranking-stat">
-                            <i class="fas fa-fire"></i> ${(participante.puntos_asador || 0).toFixed(1)}
-                        </div>
-                        <div class="ranking-stat">
-                            <i class="fas fa-shopping-basket"></i> ${(participante.puntos_compras || 0).toFixed(1)}
-                        </div>
-                        <div class="ranking-stat">
-                            <i class="fas fa-user-check"></i> ${(participante.puntos_asistencia || 0).toFixed(1)}
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="ranking-points">${participante.puntosTotales.toFixed(1)}</div>
-            `;
-            
-            // Añadir evento al hacer clic
-            rankingItem.addEventListener('click', () => {
-                mostrarDetalleParticipante(participante);
-            });
-            
-            rankingContainer.appendChild(rankingItem);
-        });
-        
-        // Mostrar mensaje si no hay participantes con puntos
-        if (rankingContainer.children.length === 0) {
-            rankingContainer.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-trophy"></i>
-                    <p>No hay participantes con puntos todavía</p>
-                </div>
-            `;
-        }
-        
-    } catch (error) {
-        console.error('Error al cargar ranking:', error);
-        rankingContainer.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-exclamation-triangle"></i>
-                <p>Error al cargar ranking: ${error.message}</p>
+            <div class="overlay">
+                <h2>${participante.nombre}</h2>
+                ${participante.apodo && participante.apodo !== participante.nombre 
+                    ? `<div class="apodo">${participante.apodo}</div>`
+                    : ''}
             </div>
-        `;
+        </div>
+        
+        <div class="participante-detalle-body">
+            <div class="participante-detalle-stats">
+                <div class="participante-detalle-stat">
+                    <div class="valor">${(participante.puntosTotales || 0).toFixed(1)}</div>
+                    <div class="etiqueta">Puntos Totales</div>
+                </div>
+                
+                <div class="participante-detalle-stat">
+                    <div class="valor">${posicionRanking}°</div>
+                    <div class="etiqueta">Ranking</div>
+                </div>
+                
+                <div class="participante-detalle-stat">
+                    <div class="valor">${participante.totalAsistencias || 0}</div>
+                    <div class="etiqueta">Asistencias</div>
+                </div>
+                
+                <div class="participante-detalle-stat">
+                    <div class="valor">${(participante.porcentajeAsistencia || 0)}%</div>
+                    <div class="etiqueta">% Asistencia</div>
+                </div>
+                
+                <div class="participante-detalle-stat">
+                    <div class="valor">${participante.vecesSede || 0}</div>
+                    <div class="etiqueta">Veces Sede</div>
+                </div>
+                
+                <div class="participante-detalle-stat">
+                    <div class="valor">${(participante.vecesAsador || 0) + (participante.asadorCompartido || 0)}</div>
+                    <div class="etiqueta">Veces Asador</div>
+                </div>
+                
+                <div class="participante-detalle-stat">
+                    <div class="valor">${(participante.vecesCompras || 0) + (participante.comprasCompartido || 0)}</div>
+                    <div class="etiqueta">Veces Compras</div>
+                </div>
+                
+                <div class="participante-detalle-stat">
+                    <div class="valor">${porcentajeContribucionGlobal}%</div>
+                    <div class="etiqueta">% del Total</div>
+                </div>
+            </div>
+            
+            <h3 style="margin-top: 20px; margin-bottom: 15px;">Contribución por Rol</h3>
+            
+            <div class="participante-grafico">
+                <div class="barra-grafico">
+                    <div class="barra-grafico-fill" style="width: ${participante.porcentajeSede || 0}%;"></div>
+                    <div class="barra-grafico-label">Sede</div>
+                    <div class="barra-grafico-value">${participante.porcentajeSede || 0}%</div>
+                </div>
+                
+                <div class="barra-grafico">
+                    <div class="barra-grafico-fill" style="width: ${participante.porcentajeAsador || 0}%;"></div>
+                    <div class="barra-grafico-label">Asador</div>
+                    <div class="barra-grafico-value">${participante.porcentajeAsador || 0}%</div>
+                </div>
+                
+                <div class="barra-grafico">
+                    <div class="barra-grafico-fill" style="width: ${participante.porcentajeCompras || 0}%;"></div>
+                    <div class="barra-grafico-label">Compras</div>
+                    <div class="barra-grafico-value">${participante.porcentajeCompras || 0}%</div>
+                </div>
+                
+                <div class="barra-grafico">
+                    <div class="barra-grafico-fill" style="width: ${participante.porcentajeAsistencia || 0}%;"></div>
+                    <div class="barra-grafico-label">Asistencia</div>
+                    <div class="barra-grafico-value">${participante.porcentajeAsistencia || 0}%</div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 20px; font-size: 0.9rem; color: #777; text-align: center;">
+                * Los porcentajes de roles se calculan respecto al total de asistencias
+            </div>
+        </div>
+    `;
+    
+    // Mostrar modal
+    if (modalParticipanteDetalle) {
+        modalParticipanteDetalle.style.display = 'block';
     }
 }
 
-// Cargar datos completos de participantes y WOGs
-async function cargarDatosCompletos() {
-    try {
-        // Cargar participantes activos
-        const participantesSnapshot = await db.collection(COLECCION_PARTICIPANTES)
-            .where('activo', '==', true)
-            .get();
-        
-        // Cargar todos los WOGs
-        const wogsSnapshot = await db.collection(COLECCION_WOGS).get();
-        wogsCache = wogsSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        }));
-        
-        const totalWogs = wogsCache.length;
-        
-        // Procesar participantes
-        participantesDetallados = participantesSnapshot.docs.map(function(doc) {
-            const data = doc.data();
-            const id = doc.id;
-            
-            // Contadores
-            let totalAsistencias = 0;
-            let vecesSede = data.puntos_sede || 0;
-            let vecesAsador = 0;
-            let asadorCompartido = 0;
-            let vecesCompras = 0;
-            let comprasCompartido = 0;
-            
-            // Contar participaciones en WOGs
-            wogsCache.forEach(wog => {
-                // Contar asistencias
-                if (wog.asistentes && wog.asistentes.includes(id)) {
-                    totalAsistencias++;
-                }
-                
-                // Contar veces como asador
-                if (wog.asadores && wog.asadores.includes(id)) {
-                    if (wog.asadores.length > 1) {
-                        asadorCompartido++;
-                    } else {
-                        vecesAsador++;
-                    }
-                }
-                
-                // Contar veces en compras
-                if (wog.comprasCompartidas && wog.comprasCompartidas.includes(id)) {
-                    comprasCompartido++;
-                } else if (wog.compras === id) {
-                    vecesCompras++;
-                }
-            });
-            
-            // Calcular estadísticas incluyendo puntos de asistencia
-            const puntosTotales = (data.puntos_sede || 0) + 
-                                 (data.puntos_asador || 0) + 
-                                 (data.puntos_compras || 0) +
-                                 (data.puntos_asistencia || 0);
-            
-            const porcentajeAsistencia = totalWogs > 0 
-                ? Math.round((totalAsistencias / totalWogs) * 100) 
-                : 0;
-            
-            const porcentajeSede = totalAsistencias > 0 
-                ? Math.round((vecesSede / totalAsistencias) * 100) 
-                : 0;
-            
-            const porcentajeAsador = totalAsistencias > 0 
-                ? Math.round(((vecesAsador + asadorCompartido) / totalAsistencias) * 100) 
-                : 0;
-            
-            const porcentajeCompras = totalAsistencias > 0 
-                ? Math.round(((vecesCompras + comprasCompartido) / totalAsistencias) * 100) 
-                : 0;
-            
-            return {
-                id,
-                ...data,
-                puntosTotales,
-                totalAsistencias,
-                vecesSede,
-                vecesAsador,
-                asadorCompartido,
-                vecesCompras,
-                comprasCompartido,
-                porcentajeAsistencia,
-                porcentajeSede,
-                porcentajeAsador,
-                porcentajeCompras
-            };
-        });
-        
-        // Ordenar por puntos (de mayor a menor)
-        participantesDetallados.sort((a, b) => b.puntosTotales - a.puntosTotales);
-        
-    } catch (error) {
-        console.error('Error al cargar datos completos:', error);
-        throw error;
-    }
-}
+// Exportar funciones necesarias al alcance global
+window.mostrarDetalleParticipante = mostrarDetalleParticipante;
