@@ -633,27 +633,37 @@ input[type="file"] {
 
 .historial-detalles {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 15px;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 10px;
 }
 
 .historial-detail {
-    display: flex;
-    flex-direction: column;
+    background-color: #f9f9f9;
+    padding: 10px;
+    border-radius: 5px;
 }
 
 .historial-label {
     font-size: 0.8rem;
-    color: #777;
-    margin-bottom: 3px;
+    color: #666;
+    margin-bottom: 5px;
 }
 
 .historial-value {
     font-weight: 600;
+    word-break: break-word;
 }
 
-.historial-asistentes {
-    margin-top: 15px;
+.historial-asistentes .historial-value {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+@media (max-width: 480px) {
+    .historial-detalles {
+        grid-template-columns: 1fr;
+    }
 }
 
 .asistentes-list {
