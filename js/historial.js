@@ -57,11 +57,6 @@ async function cargarHistorialSimple() {
     try {
         console.log('🔍 Diagnóstico de carga de historial...');
         
-        // Verificar colecciones disponibles
-        console.log('Verificando colecciones disponibles:');
-        const colecciones = await db.getCollections();
-        console.log('Colecciones encontradas:', colecciones.map(col => col.id));
-        
         // Mostrar loader
         historialContainer.innerHTML = `
             <div class="loader">
@@ -114,7 +109,13 @@ async function cargarHistorialSimple() {
         historialContainer.innerHTML = '';
         
         // Crear elemento para cada WOG
-        wogsSnapshot.docs.forEach(doc => {
+        const wogsOrdenados = wogsSnapshot.docs.sort((a, b) => {
+            const fechaA = a.data().fecha.toDate();
+            const fechaB = b.data().fecha.toDate();
+            return fechaB - fechaA; // Más recientes primero
+        });
+        
+        wogsOrdenados.forEach(doc => {
             const wog = doc.data();
             const fecha = wog.fecha ? wog.fecha.toDate() : new Date();
             
@@ -171,7 +172,6 @@ async function cargarHistorialSimple() {
         `;
     }
 }
-
 // Mostrar notas de un WOG (versión simple)
 async function mostrarNotasWogSimple(wogId) {
     try {
