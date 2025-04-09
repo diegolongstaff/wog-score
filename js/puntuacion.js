@@ -1,10 +1,10 @@
 // Módulo para gestionar el sistema de puntuación de los WOGs
 
 // Constantes para valores de puntos
-const PUNTOS_POR_SEDE = 1;
-const PUNTOS_POR_ASADOR = 1;
-const PUNTOS_POR_COMPRAS = 1;
-const PUNTOS_POR_ASISTENCIA = 0.5;
+const PUNTOS_POR_SEDE = 10;
+const PUNTOS_POR_ASADOR = 5;
+const PUNTOS_POR_COMPRAS = 7;
+const PUNTOS_POR_ASISTENCIA = 1;
 
 // Inicializar módulo
 function initPuntuacionModule() {
