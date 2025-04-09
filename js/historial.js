@@ -90,36 +90,38 @@ async function cargarHistorialSimple() {
             return;
         }
         
-        // Mostrar detalles de cada WOG
-        console.log('🔎 Detalles de cada WOG:');
-        wogsSnapshot.docs.forEach((doc, index) => {
-            const wog = doc.data();
-            console.log(`WOG ${index + 1}:`, {
-                id: doc.id,
-                fecha: wog.fecha ? wog.fecha.toDate() : 'Sin fecha',
-                sede: participantesMap[wog.sede] || 'Sin sede',
-                subsede: wog.subsede || 'Sin subsede',
-                asadores: wog.asadores ? wog.asadores.map(id => participantesMap[id] || 'Desconocido') : [],
-                asistentes: wog.asistentes ? wog.asistentes.map(id => participantesMap[id] || 'Desconocido') : [],
-                notas: wog.notas ? 'Con notas' : 'Sin notas'
-            });
-        });
-        
         // Limpiar contenedor
         historialContainer.innerHTML = '';
         
-        // Crear elemento para cada WOG
+        // Ordenar WOGs por fecha (más reciente primero)
         const wogsOrdenados = wogsSnapshot.docs.sort((a, b) => {
             const fechaA = a.data().fecha.toDate();
             const fechaB = b.data().fecha.toDate();
-            return fechaB - fechaA; // Más recientes primero
+            return fechaB - fechaA;
         });
         
         wogsOrdenados.forEach(doc => {
             const wog = doc.data();
             const fecha = wog.fecha ? wog.fecha.toDate() : new Date();
             
+            // Funciones auxiliares para mapear IDs a nombres
+            const mapearNombres = (ids) => ids 
+                ? ids.map(id => participantesMap[id] || 'Desconocido').join(', ')
+                : 'No disponible';
+            
             const sedeNombre = participantesMap[wog.sede] || 'Desconocido';
+            const asadoresNombres = mapearNombres(wog.asadores);
+            const asistentesNombres = mapearNombres(wog.asistentes);
+            
+            // Determinar compradores
+            let compradoresNombres = 'No disponible';
+            if (wog.compradores) {
+                compradoresNombres = mapearNombres(wog.compradores);
+            } else if (wog.compras) {
+                compradoresNombres = participantesMap[wog.compras] || 'Desconocido';
+            } else if (wog.comprasCompartidas) {
+                compradoresNombres = mapearNombres(wog.comprasCompartidas);
+            }
             
             const wogElement = document.createElement('div');
             wogElement.className = 'historial-item';
@@ -152,6 +154,21 @@ async function cargarHistorialSimple() {
                     <div class="historial-detail">
                         <div class="historial-label">Subsede</div>
                         <div class="historial-value">${wog.subsede || '-'}</div>
+                    </div>
+                    
+                    <div class="historial-detail">
+                        <div class="historial-label">Asador(es)</div>
+                        <div class="historial-value">${asadoresNombres}</div>
+                    </div>
+                    
+                    <div class="historial-detail">
+                        <div class="historial-label">Comprador(es)</div>
+                        <div class="historial-value">${compradoresNombres}</div>
+                    </div>
+                    
+                    <div class="historial-detail historial-asistentes">
+                        <div class="historial-label">Asistentes</div>
+                        <div class="historial-value">${asistentesNombres}</div>
                     </div>
                 </div>
             `;
