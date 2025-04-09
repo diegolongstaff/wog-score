@@ -46,13 +46,21 @@ function initHistorialModule() {
     console.log('Módulo de historial inicializado correctamente');
 }
 
-// Función simplificada para cargar el historial
+// Función simplificada para cargar el historial con diagnóstico
 async function cargarHistorialSimple() {
     const historialContainer = document.getElementById('historial-container');
-    if (!historialContainer) return;
+    if (!historialContainer) {
+        console.error('Contenedor de historial no encontrado');
+        return;
+    }
     
     try {
-        console.log('Cargando historial de WOGs...');
+        console.log('🔍 Diagnóstico de carga de historial...');
+        
+        // Verificar colecciones disponibles
+        console.log('Verificando colecciones disponibles:');
+        const colecciones = await db.getCollections();
+        console.log('Colecciones encontradas:', colecciones.map(col => col.id));
         
         // Mostrar loader
         historialContainer.innerHTML = `
@@ -62,12 +70,22 @@ async function cargarHistorialSimple() {
         `;
         
         // Obtener WOGs de Firestore
-        const snapshot = await db.collection('wogs').get();
-        console.log('Datos recibidos de Firestore:', snapshot.size, 'documentos');
+        const wogsSnapshot = await db.collection('wogs').get();
+        console.log('📊 Resumen de WOGs:');
+        console.log('Número total de WOGs:', wogsSnapshot.size);
+        
+        // Obtener datos de participantes para nombres
+        const participantesSnapshot = await db.collection('participantes').get();
+        const participantesMap = {};
+        participantesSnapshot.docs.forEach(doc => {
+            participantesMap[doc.id] = doc.data().nombre || 'Desconocido';
+        });
+        
+        console.log('📋 Participantes encontrados:', Object.keys(participantesMap).length);
         
         // Verificar si hay WOGs
-        if (snapshot.empty) {
-            console.log('No se encontraron WOGs');
+        if (wogsSnapshot.empty) {
+            console.warn('⚠️ No se encontraron WOGs');
             historialContainer.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-calendar-alt"></i>
@@ -77,13 +95,30 @@ async function cargarHistorialSimple() {
             return;
         }
         
+        // Mostrar detalles de cada WOG
+        console.log('🔎 Detalles de cada WOG:');
+        wogsSnapshot.docs.forEach((doc, index) => {
+            const wog = doc.data();
+            console.log(`WOG ${index + 1}:`, {
+                id: doc.id,
+                fecha: wog.fecha ? wog.fecha.toDate() : 'Sin fecha',
+                sede: participantesMap[wog.sede] || 'Sin sede',
+                subsede: wog.subsede || 'Sin subsede',
+                asadores: wog.asadores ? wog.asadores.map(id => participantesMap[id] || 'Desconocido') : [],
+                asistentes: wog.asistentes ? wog.asistentes.map(id => participantesMap[id] || 'Desconocido') : [],
+                notas: wog.notas ? 'Con notas' : 'Sin notas'
+            });
+        });
+        
         // Limpiar contenedor
         historialContainer.innerHTML = '';
         
         // Crear elemento para cada WOG
-        snapshot.docs.forEach(doc => {
+        wogsSnapshot.docs.forEach(doc => {
             const wog = doc.data();
             const fecha = wog.fecha ? wog.fecha.toDate() : new Date();
+            
+            const sedeNombre = participantesMap[wog.sede] || 'Desconocido';
             
             const wogElement = document.createElement('div');
             wogElement.className = 'historial-item';
@@ -109,13 +144,8 @@ async function cargarHistorialSimple() {
                 
                 <div class="historial-detalles">
                     <div class="historial-detail">
-                        <div class="historial-label">ID</div>
-                        <div class="historial-value">${doc.id}</div>
-                    </div>
-                    
-                    <div class="historial-detail">
                         <div class="historial-label">Sede</div>
-                        <div class="historial-value">${wog.sede || '-'}</div>
+                        <div class="historial-value">${sedeNombre}</div>
                     </div>
                     
                     <div class="historial-detail">
@@ -128,14 +158,15 @@ async function cargarHistorialSimple() {
             historialContainer.appendChild(wogElement);
         });
         
-        console.log('Historial cargado exitosamente con', snapshot.size, 'elementos');
+        console.log('✅ Historial cargado exitosamente');
         
     } catch (error) {
-        console.error('Error al cargar historial:', error);
+        console.error('❌ Error detallado al cargar historial:', error);
         historialContainer.innerHTML = `
             <div class="empty-state">
                 <i class="fas fa-exclamation-triangle"></i>
                 <p>Error al cargar historial: ${error.message}</p>
+                <p>Revisa la consola para más detalles</p>
             </div>
         `;
     }
