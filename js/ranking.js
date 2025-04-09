@@ -9,14 +9,114 @@ let participanteDetalleContenido;
 let participantesDetallados = [];
 let wogsCache = [];
 
-// Función separada para cargar ranking
-async function cargarRankingModule() {
-    console.log('Cargando ranking (función separada)...');
+// Cargar datos completos de participantes y WOGs
+async function cargarDatosCompletos() {
+    try {
+        // Cargar participantes activos
+        const participantesSnapshot = await db.collection(COLECCION_PARTICIPANTES)
+            .where('activo', '==', true)
+            .get();
+        
+        // Cargar todos los WOGs
+        const wogsSnapshot = await db.collection(COLECCION_WOGS).get();
+        wogsCache = wogsSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+        
+        const totalWogs = wogsCache.length;
+        
+        // Procesar participantes
+        participantesDetallados = participantesSnapshot.docs.map(function(doc) {
+            const data = doc.data();
+            const id = doc.id;
+            
+            // Contadores
+            let totalAsistencias = 0;
+            let vecesSede = data.puntos_sede || 0;
+            let vecesAsador = 0;
+            let asadorCompartido = 0;
+            let vecesCompras = 0;
+            let comprasCompartido = 0;
+            
+            // Contar participaciones en WOGs
+            wogsCache.forEach(wog => {
+                // Contar asistencias
+                if (wog.asistentes && wog.asistentes.includes(id)) {
+                    totalAsistencias++;
+                }
+                
+                // Contar veces como asador
+                if (wog.asadores && wog.asadores.includes(id)) {
+                    if (wog.asadores.length > 1) {
+                        asadorCompartido++;
+                    } else {
+                        vecesAsador++;
+                    }
+                }
+                
+                // Contar veces en compras
+                if (wog.comprasCompartidas && wog.comprasCompartidas.includes(id)) {
+                    comprasCompartido++;
+                } else if (wog.compras === id) {
+                    vecesCompras++;
+                }
+            });
+            
+            // Calcular estadísticas
+            const puntosTotales = (data.puntos_sede || 0) + 
+                                 (data.puntos_asador || 0) + 
+                                 (data.puntos_compras || 0);
+            
+            const porcentajeAsistencia = totalWogs > 0 
+                ? Math.round((totalAsistencias / totalWogs) * 100) 
+                : 0;
+            
+            const porcentajeSede = totalAsistencias > 0 
+                ? Math.round((vecesSede / totalAsistencias) * 100) 
+                : 0;
+            
+            const porcentajeAsador = totalAsistencias > 0 
+                ? Math.round(((vecesAsador + asadorCompartido) / totalAsistencias) * 100) 
+                : 0;
+            
+            const porcentajeCompras = totalAsistencias > 0 
+                ? Math.round(((vecesCompras + comprasCompartido) / totalAsistencias) * 100) 
+                : 0;
+            
+            return {
+                id,
+                ...data,
+                puntosTotales,
+                totalAsistencias,
+                vecesSede,
+                vecesAsador,
+                asadorCompartido,
+                vecesCompras,
+                comprasCompartido,
+                porcentajeAsistencia,
+                porcentajeSede,
+                porcentajeAsador,
+                porcentajeCompras
+            };
+        });
+        
+        // Ordenar por puntos (de mayor a menor)
+        participantesDetallados.sort((a, b) => b.puntosTotales - a.puntosTotales);
+        
+    } catch (error) {
+        console.error('Error al cargar datos completos:', error);
+        throw error;
+    }
+}
+
+// Función para cargar ranking
+async function cargarRanking() {
+    console.log('Cargando ranking...');
     
     try {
-        if (!rankingContainer) {
-            rankingContainer = document.getElementById('ranking-container');
-        }
+        // Obtener contenedor de ranking
+        const rankingContainer = document.getElementById('ranking-container');
         
         if (!rankingContainer) {
             console.warn('Contenedor de ranking no encontrado');
@@ -63,7 +163,7 @@ async function cargarRankingModule() {
                 <div class="ranking-avatar">
                     ${participante.imagen_url 
                         ? `<img src="${participante.imagen_url}" alt="${participante.nombre}">` 
-                        : `<div class="avatar-placeholder">${window.obtenerIniciales(participante.nombre)}</div>`}
+                        : `<div class="avatar-placeholder">${obtenerIniciales(participante.nombre)}</div>`}
                 </div>
                 
                 <div class="ranking-details">
@@ -104,6 +204,7 @@ async function cargarRankingModule() {
         
     } catch (error) {
         console.error('Error al cargar ranking:', error);
+        const rankingContainer = document.getElementById('ranking-container');
         if (rankingContainer) {
             rankingContainer.innerHTML = `
                 <div class="empty-state">
@@ -115,68 +216,38 @@ async function cargarRankingModule() {
     }
 }
 
-// Modificar la función de inicialización
+// Inicializar módulo de ranking
 function initRankingModule() {
     console.log('Inicializando módulo de ranking...');
-    
-    // Obtener referencias a los elementos DOM
-    rankingContainer = document.getElementById('ranking-container');
-    modalParticipanteDetalle = document.getElementById('modal-participante-detalle');
-    participanteDetalleContenido = document.getElementById('participante-detalle-contenido');
-    
-    // Verificar que los elementos existen
-    if (!rankingContainer) {
-        console.warn('Contenedor de ranking no encontrado');
-        return;
-    }
-    
-    // Cargar ranking inmediatamente
-    cargarRankingModule();
     
     // Escuchar eventos de cambio de pestaña
     document.addEventListener('tabChanged', ({ detail }) => {
         if (detail.tabId === 'tab-ranking') {
-            cargarRankingModule();
+            cargarRanking();
         }
     });
     
     // Escuchar eventos de actualización
-    document.addEventListener('wogActualizado', cargarRankingModule);
-    document.addEventListener('participantesActualizados', cargarRankingModule);
+    document.addEventListener('wogActualizado', cargarRanking);
+    document.addEventListener('participantesActualizados', cargarRanking);
     
-    // Configurar cierre del modal de detalle si existe
-    if (modalParticipanteDetalle) {
-        const closeButton = modalParticipanteDetalle.querySelector('.close-modal');
-        if (closeButton) {
-            closeButton.addEventListener('click', () => {
-                modalParticipanteDetalle.style.display = 'none';
-            });
-        }
-        
-        // Cerrar modal al hacer clic fuera
-        window.addEventListener('click', (event) => {
-            if (event.target === modalParticipanteDetalle) {
-                modalParticipanteDetalle.style.display = 'none';
-            }
-        });
-    }
+    // Cargar ranking inicial
+    cargarRanking();
     
     console.log('Módulo de ranking inicializado correctamente');
 }
-
-// Resto del código (cargarDatosCompletos y otras funciones) se mantiene igual...
 
 // Función para mostrar detalle de participante
 function mostrarDetalleParticipante(participante) {
     console.log('Mostrando detalle de participante:', participante);
     
+    // Obtener referencias a los elementos
+    const modalParticipanteDetalle = document.getElementById('modal-participante-detalle');
+    const participanteDetalleContenido = document.getElementById('participante-detalle-contenido');
+    
     // Verificar que el participante exista
     if (!participante) {
-        if (typeof window.mostrarToast === 'function') {
-            window.mostrarToast('Datos del participante no disponibles', true);
-        } else {
-            console.error('Datos del participante no disponibles');
-        }
+        mostrarToast('Datos del participante no disponibles', true);
         return;
     }
     
@@ -186,12 +257,12 @@ function mostrarDetalleParticipante(participante) {
         return;
     }
     
-    // HTML para el detalle del participante (similar al código anterior)
+    // HTML para el detalle del participante
     participanteDetalleContenido.innerHTML = `
         <div class="participante-detalle-header">
             ${participante.imagen_url 
                 ? `<img src="${participante.imagen_url}" alt="${participante.nombre}">`
-                : `<div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--color-primary); display: flex; align-items: center; justify-content: center; font-size: 5rem; color: white;">${window.obtenerIniciales(participante.nombre)}</div>`}
+                : `<div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--color-primary); display: flex; align-items: center; justify-content: center; font-size: 5rem; color: white;">${obtenerIniciales(participante.nombre)}</div>`}
             
             <div class="overlay">
                 <h2>${participante.nombre}</h2>
@@ -201,15 +272,40 @@ function mostrarDetalleParticipante(participante) {
             </div>
         </div>
         
-        <!-- Resto del contenido del detalle -->
+        <div class="participante-detalle-body">
+            <div class="participante-detalle-stats">
+                <div class="participante-detalle-stat">
+                    <div class="valor">${(participante.puntosTotales || 0).toFixed(1)}</div>
+                    <div class="etiqueta">Puntos Totales</div>
+                </div>
+                
+                <div class="participante-detalle-stat">
+                    <div class="valor">${participante.totalAsistencias || 0}</div>
+                    <div class="etiqueta">Asistencias</div>
+                </div>
+                
+                <div class="participante-detalle-stat">
+                    <div class="valor">${participante.vecesSede || 0}</div>
+                    <div class="etiqueta">Veces Sede</div>
+                </div>
+                
+                <div class="participante-detalle-stat">
+                    <div class="valor">${(participante.vecesAsador || 0) + (participante.asadorCompartido || 0)}</div>
+                    <div class="etiqueta">Veces Asador</div>
+                </div>
+                
+                <div class="participante-detalle-stat">
+                    <div class="valor">${(participante.vecesCompras || 0) + (participante.comprasCompartido || 0)}</div>
+                    <div class="etiqueta">Veces Compras</div>
+                </div>
+            </div>
+        </div>
     `;
     
     // Mostrar modal
-    if (modalParticipanteDetalle) {
-        modalParticipanteDetalle.style.display = 'block';
-    }
+    modalParticipanteDetalle.style.display = 'block';
 }
 
 // Exportar funciones globales
-window.cargarRanking = cargarRankingModule;
+window.cargarRanking = cargarRanking;
 window.mostrarDetalleParticipante = mostrarDetalleParticipante;
