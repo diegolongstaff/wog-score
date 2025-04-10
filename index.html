@@ -234,7 +234,7 @@
             </div>
         </div>
     </div>
-    <!-- Modal: Editar WOG -->
+<!-- Modal: Editar WOG -->
 <div id="modal-edit-wog" class="modal">
     <div class="modal-content">
         <span class="close-modal">&times;</span>
@@ -261,7 +261,21 @@
             </div>
             
             <div class="form-group">
-                <label>Asador(es)</label>
+                <label>Compradores</label>
+                <div id="edit-compradores-container">
+                    <div class="comprador-item">
+                        <select class="comprador-select" required>
+                            <option value="">Seleccionar comprador</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="button" id="edit-add-comprador" class="btn btn-circle">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            
+            <div class="form-group">
+                <label>Asador</label>
                 <div id="edit-asadores-container">
                     <div class="asador-item">
                         <select class="asador-select" required>
@@ -272,19 +286,6 @@
                 <button type="button" id="edit-add-asador" class="btn btn-circle">
                     <i class="fas fa-plus"></i>
                 </button>
-            </div>
-            
-            <div class="form-group">
-                <label for="edit-compras">Compras</label>
-                <select id="edit-compras" required>
-                    <option value="">Seleccionar responsable</option>
-                    <option value="compartido">Compartido</option>
-                </select>
-            </div>
-            
-            <div id="edit-compras-compartidas" class="form-group" style="display: none;">
-                <label>Compras compartidas entre:</label>
-                <div id="edit-compras-participantes" class="checkbox-group"></div>
             </div>
             
             <div class="form-group">
