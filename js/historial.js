@@ -133,12 +133,16 @@ async function cargarHistorialSimple() {
                         ${fecha.toLocaleDateString('es-ES', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'})}
                         ${wog.notas ? '<span class="badge-notas">Notas</span>' : ''}
                     </div>
+                    // In the historial-header section, add the edit button
                     <div class="historial-acciones">
                         ${wog.notas ? `
                             <button class="historial-accion notas" onclick="mostrarNotasWogSimple('${doc.id}')">
                                 <i class="fas fa-sticky-note"></i>
                             </button>
                         ` : ''}
+                        <button class="historial-accion editar" onclick="editarWog('${doc.id}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
                         <button class="historial-accion eliminar" onclick="confirmarEliminarWogSimple('${doc.id}')">
                             <i class="fas fa-trash"></i>
                         </button>
