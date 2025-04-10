@@ -992,7 +992,43 @@ input[type="file"] {
     gap: 15px;
     margin-top: 30px;
 }
+#modal-edit-wog .modal-content {
+    max-width: 600px;
+    width: 90%;
+    margin: 10% auto;
+    padding: 25px;
+    background-color: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+    position: relative;
+}
 
+#modal-edit-wog .close-modal {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+#modal-edit-wog h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: var(--color-primary);
+}
+
+#edit-asadores-container,
+#edit-compras-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.asador-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
 /* Toast notifications */
 .toast {
     visibility: hidden;
