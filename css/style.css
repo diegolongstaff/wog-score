@@ -619,8 +619,12 @@ input[type="file"] {
     color: var(--color-primary);
 }
 
-.historial-accion.editar:hover {
+.historial-accion.editar {
     color: var(--color-accent);
+}
+
+.historial-accion.editar:hover {
+    color: #25a799; /* A slightly darker shade of the accent color */
 }
 
 .historial-accion.eliminar:hover {
