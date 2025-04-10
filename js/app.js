@@ -19,6 +19,7 @@ function inicializarApp() {
     if (typeof initWogModule === 'function') initWogModule();
     if (typeof initRankingModule === 'function') initRankingModule();
     if (typeof initHistorialModule === 'function') initHistorialModule();
+    if (typeof initWogEditModule === 'function') initWogEditModule();
     
     // Configurar eventos globales
     configurarEventosGlobales();
