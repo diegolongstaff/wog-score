@@ -1,0 +1,1 @@
+// main.js: carga inicial y llamada a recalcularPuntos()
