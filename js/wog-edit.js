@@ -108,148 +108,94 @@ function agregarEditSelectorAsador() {
     editAsadoresContainer.appendChild(asadorItem);
 }
 
-// Cargar formulario de edición con datos de participantes
-async function cargarFormularioEditWog() {
+async function cargarFormularioEditWog(idWog) {
     try {
-        // Obtener participantes activos
-        const snapshot = await db.collection(COLECCION_PARTICIPANTES)
-            .where('activo', '==', true)
-            .get();
-        
-        const participantes = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        }));
-        
-        // Ordenar por nombre
-        participantes.sort((a, b) => a.nombre.localeCompare(b.nombre));
-        
-        // Llenar selector de sede
-        editSedeSelect.innerHTML = '<option value="">Seleccionar anfitrión</option>';
-        participantes.forEach(p => {
-            const option = document.createElement('option');
-            option.value = p.id;
-            option.textContent = p.nombre;
-            editSedeSelect.appendChild(option);
-        });
-        
-        // Llenar selector de compras
-        editComprasSelect.innerHTML = '<option value="">Seleccionar responsable</option>';
-        editComprasSelect.innerHTML += '<option value="compartido">Compartido</option>';
-        participantes.forEach(p => {
-            const option = document.createElement('option');
-            option.value = p.id;
-            option.textContent = p.nombre;
-            editComprasSelect.appendChild(option);
-        });
-        
-        // Llenar selector de asador
-        const asadorSelect = editAsadoresContainer.querySelector('.asador-select');
-        asadorSelect.innerHTML = '<option value="">Seleccionar asador</option>';
-        participantes.forEach(p => {
-            const option = document.createElement('option');
-            option.value = p.id;
-            option.textContent = p.nombre;
-            asadorSelect.appendChild(option);
-        });
-        
-        // Llenar checkboxes de asistentes
-        editAsistentesLista.innerHTML = '';
-        participantes.forEach(p => {
-            const checkbox = document.createElement('div');
-            checkbox.className = 'checkbox-item';
-            checkbox.innerHTML = `
-                <input type="checkbox" id="edit-asistente-${p.id}" value="${p.id}">
-                <label for="edit-asistente-${p.id}">${p.nombre}</label>
-            `;
-            editAsistentesLista.appendChild(checkbox);
-        });
-        
-        // Llenar checkboxes de compras compartidas
-        editComprasParticipantesDiv.innerHTML = '';
-        participantes.forEach(p => {
-            const checkbox = document.createElement('div');
-            checkbox.className = 'checkbox-item';
-            checkbox.innerHTML = `
-                <input type="checkbox" id="edit-compra-compartida-${p.id}" value="${p.id}">
-                <label for="edit-compra-compartida-${p.id}">${p.nombre}</label>
-            `;
-            editComprasParticipantesDiv.appendChild(checkbox);
-        });
+      const doc = await db.collection('wogs').doc(idWog).get();
+      if (!doc.exists) {
+        throw new Error('El WOG no existe');
+      }
+      const wog = doc.data();
+      console.log("✏️ Cargando datos para edición:", wog);
+  
+      // Asignar valores solo si los elementos existen
+      const participantesLista = document.getElementById("participantes-lista");
+      if (participantesLista) {
+        participantesLista.innerHTML = ""; // Limpia antes de cargar nuevos datos
+        // Si necesitas cargar datos de participantes, agregalo acá
+      }
+  
+      const asistentesLista = document.getElementById("edit-asistentes-lista");
+      if (asistentesLista) {
+        asistentesLista.innerHTML = ""; // Limpia lista de asistentes (opcional)
+      }
+  
+      const compradoresContainer = document.getElementById("edit-compradores-container");
+      if (compradoresContainer) {
+        compradoresContainer.innerHTML = ""; // Limpia lista de compradores
+      }
+  
+      const asadoresContainer = document.getElementById("edit-asadores-container");
+      if (asadoresContainer) {
+        asadoresContainer.innerHTML = ""; // Limpia lista de asadores
+      }
+  
+      // Llamar a función de llenar campos
+      llenarFormularioEdit(wog);
+  
     } catch (error) {
-        console.error('Error al cargar participantes para edición:', error);
-        mostrarToast('Error al cargar participantes', true);
+      console.error("Error al cargar participantes para edición:", error);
     }
-}
+  }
+  
 
 // Llenar formulario con datos del WOG a editar
 function llenarFormularioEdit(wog) {
-    // Guardar datos originales para comparar cambios
-    originalWogData = {...wog};
-    
-    // Llenar campos básicos
-    editWogIdInput.value = wog.id || '';
-    
-    if (wog.fecha) {
-        const fecha = wog.fecha.toDate ? wog.fecha.toDate() : new Date(wog.fecha);
-        editFechaInput.value = formatearFechaInput(fecha);
-    }
-    
-    editSedeSelect.value = wog.sede || '';
-    editSubsedeInput.value = wog.subsede || '';
-    editNotasInput.value = wog.notas || '';
-    
-    // Configurar asadores
-    // Limpiar todos excepto el primero
-    const asadorItems = editAsadoresContainer.querySelectorAll('.asador-item');
-    for (let i = 1; i < asadorItems.length; i++) {
-        asadorItems[i].remove();
-    }
-    
-    // Configurar el primer asador
-    const primerAsadorSelect = editAsadoresContainer.querySelector('.asador-select');
-    if (primerAsadorSelect && wog.asadores && wog.asadores.length > 0) {
-        primerAsadorSelect.value = wog.asadores[0];
-        
-        // Agregar asadores adicionales si hay más de uno
-        for (let i = 1; i < wog.asadores.length; i++) {
-            agregarEditSelectorAsador();
-            const selects = editAsadoresContainer.querySelectorAll('.asador-select');
-            selects[selects.length - 1].value = wog.asadores[i];
-        }
-    }
-    
-    // Configurar compras
-    if (wog.compras) {
-        // Un solo comprador
-        editComprasSelect.value = wog.compras;
-        editComprasCompartidasDiv.style.display = 'none';
-    } else if (wog.comprasCompartidas && wog.comprasCompartidas.length > 0) {
-        // Compras compartidas
-        editComprasSelect.value = 'compartido';
-        editComprasCompartidasDiv.style.display = 'block';
-        
-        // Marcar los checkboxes correspondientes
-        wog.comprasCompartidas.forEach(compradorId => {
-            const checkbox = document.getElementById(`edit-compra-compartida-${compradorId}`);
-            if (checkbox) checkbox.checked = true;
+    try {
+      const fechaInput = document.getElementById("edit-fecha");
+      if (fechaInput) fechaInput.value = convertirFechaInput(wog.fecha);
+  
+      const sedeSelect = document.getElementById("edit-sede");
+      if (sedeSelect) sedeSelect.value = wog.sede || "";
+  
+      const subsedeInput = document.getElementById("edit-subsede");
+      if (subsedeInput) subsedeInput.value = wog.subsede || "";
+  
+      const notasTextarea = document.getElementById("edit-notas");
+      if (notasTextarea) notasTextarea.value = wog.notas || "";
+  
+      const asistentesLista = document.getElementById("edit-asistentes-lista");
+      if (asistentesLista && Array.isArray(wog.asistentes)) {
+        // Ejemplo: podés renderizar checkboxes de asistentes acá
+        wog.asistentes.forEach(id => {
+          const label = document.createElement('label');
+          label.innerText = id; // o buscar nombre por id
+          asistentesLista.appendChild(label);
         });
-    }
-    
-    // Marcar asistentes
-    // Desmarcar todos primero
-    editAsistentesLista.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-        checkbox.checked = false;
-    });
-    
-    // Marcar los asistentes de este WOG
-    if (wog.asistentes) {
-        wog.asistentes.forEach(asistente => {
-            const checkbox = document.getElementById(`edit-asistente-${asistente}`);
-            if (checkbox) checkbox.checked = true;
+      }
+  
+      const compradoresContainer = document.getElementById("edit-compradores-container");
+      if (compradoresContainer && Array.isArray(wog.compras)) {
+        wog.compras.forEach(id => {
+          const label = document.createElement('label');
+          label.innerText = id;
+          compradoresContainer.appendChild(label);
         });
+      }
+  
+      const asadoresContainer = document.getElementById("edit-asadores-container");
+      if (asadoresContainer && Array.isArray(wog.asadores)) {
+        wog.asadores.forEach(id => {
+          const label = document.createElement('label');
+          label.innerText = id;
+          asadoresContainer.appendChild(label);
+        });
+      }
+  
+    } catch (error) {
+      console.error("Error al llenar formulario de edición:", error);
     }
-}
+  }
+  
 
 // Abrir modal para editar un WOG
 async function editarWog(wogId) {
