@@ -1,8 +1,362 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WOG Score - Retro Edition</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    
+    <!-- Estilos CSS -->
+    <link rel="stylesheet" href="css/style.css">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
 
-<!-- index.html -->
-<button id="btn-recalcular" onclick="recalcularPuntos()">Recalcular puntajes</button>
+    <link rel="icon" href="data:;base64,=">
+</head>
+<body>
+    <div class="retro-background"></div>
+    
+    <header class="retro-header">
+        <div class="logo-container">
+            <h1>Martes WOG</h1>
+            <p class="tagline">Puntuación & Estadísticas</p>
+        </div>
+    </header>
+    
+    <div class="tab-container">
+        <div class="tabs">
+            <button class="tab-button active" data-tab="tab-home">Inicio</button>
+            <button class="tab-button" data-tab="tab-nuevo">Nuevo WOG</button>
+            <button class="tab-button" data-tab="tab-ranking">Ranking</button>
+            <button class="tab-button" data-tab="tab-historial">Historial</button>
+            <button class="tab-button" data-tab="tab-participantes">Participantes</button>
+        </div>
+    </div>
+    
+    <main class="container">
+        <!-- Tab: Inicio -->
+        <div id="tab-home" class="tab-content active">
+            <div class="intro-card">
+                <h2>¡Bienvenido al Martes WOG!</h2>
+                <p>Aquí llevamos el registro de nuestros encuentros, puntuaciones y estadísticas. Navega por las pestañas para comenzar.</p>
+                
+<!-- BOTÓN ADMIN - SOLO PARA DIEGO -->
+<div id="admin-actions" style="display: none; margin: 10px 0;">
+    <button id="btn-recalcular" onclick="recalcularPuntos()">🔄 Recalcular Puntajes</button>
+  </div>
+  
+
+                <div class="dashboard">
+                    <div class="stat-card">
+                        <i class="fas fa-calendar-alt"></i>
+                        <h3>WOGs registrados</h3>
+                        <p id="total-wogs">0</p>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-users"></i>
+                        <h3>Participantes</h3>
+                        <p id="total-participantes">0</p>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-trophy"></i>
+                        <h3>Líder actual</h3>
+                        <p id="current-leader">-</p>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-clock"></i>
+                        <h3>Próximo WOG</h3>
+                        <p id="next-wog">-</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tab: Nuevo WOG -->
+        <div id="tab-nuevo" class="tab-content">
+            <div class="retro-card">
+                <h2>Registrar Nuevo WOG</h2>
+                <form id="nuevo-wog-form">
+                    <div class="form-group">
+                        <label for="fecha">Fecha</label>
+                        <input type="date" id="fecha" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="sede">Sede</label>
+                        <select id="sede" required>
+                            <option value="">Seleccionar anfitrión</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="subsede">Subsede</label>
+                        <input type="text" id="subsede" placeholder="Ej: Casa, Club, CNSI...">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="compras">Compras</label>
+                        <select id="compras" required>
+                            <option value="">Seleccionar responsable</option>
+                            <option value="compartido">Compartido</option>
+                        </select>
+                    </div>
+                    
+                    <div id="compras-compartidas" class="form-group" style="display: none;">
+                        <label>Compras compartidas entre:</label>
+                        <div id="compras-participantes" class="checkbox-group"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Asador</label>
+                        <div id="asadores-container">
+                            <div class="asador-item">
+                                <select class="asador-select" required>
+                                    <option value="">Seleccionar asador</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="button" id="add-asador" class="btn btn-circle">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Asistentes</label>
+                        <div id="asistentes-lista" class="checkbox-group"></div>
+                    </div>
+                    <!-- NUEVO CONTENEDOR PARA PARTICIPANTES (ARREGLA ERROR) -->
 <div id="nombre-participantes">
-  <h3>Participantes</h3>
-  <div id="participantes-lista" class="checkbox-grid"></div>
+    <h3>Participantes</h3>
+    <div id="participantes-lista" class="checkbox-grid"></div>
+  </div>
+  
+                    <div class="form-group">
+                        <label for="notas">Notas (opcional)</label>
+                        <textarea id="notas" placeholder="Temas discutidos, actividades, anécdotas..." rows="4"></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-submit">Guardar WOG</button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Tab: Ranking -->
+        <div id="tab-ranking" class="tab-content">
+            <div class="retro-card">
+                <h2>Ranking de Participantes</h2>
+                <div id="ranking-container" class="ranking-list"></div>
+            </div>
+        </div>
+        
+        <!-- Tab: Historial -->
+        <div id="tab-historial" class="tab-content">
+            <div class="retro-card">
+                <h2>Historial de WOGs</h2>
+                <div id="historial-container" class="historial-list"></div>
+            </div>
+        </div>
+        
+        <!-- Tab: Participantes -->
+        <div id="tab-participantes" class="tab-content">
+            <div class="retro-card">
+                <h2>Participantes</h2>
+                <button id="btn-nuevo-participante" class="btn btn-add">
+                    <i class="fas fa-user-plus"></i> Nuevo Participante
+                </button>
+                
+                <div id="participantes-container" class="participantes-grid"></div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Modal: Nuevo Participante -->
+    <div id="modal-participante" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2 id="modal-participante-titulo">Nuevo Participante</h2>
+            
+            <form id="participante-form">
+                <input type="hidden" id="participante-id">
+                
+                <div class="form-group">
+                    <label for="participante-nombre">Nombre</label>
+                    <input type="text" id="participante-nombre" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="participante-apodo">Apodo</label>
+                    <input type="text" id="participante-apodo">
+                </div>
+                
+                <div class="form-group">
+                    <label for="participante-imagen">Imagen</label>
+                    <input type="file" id="participante-imagen" accept="image/*">
+                    <div id="preview-container" class="image-preview"></div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" id="btn-cancelar-participante" class="btn btn-cancel">Cancelar</button>
+                    <button type="submit" class="btn btn-submit">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Modal: Confirmación -->
+    <div id="modal-confirmacion" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2 id="modal-confirmacion-titulo">Confirmar Acción</h2>
+            <p id="modal-confirmacion-mensaje"></p>
+            
+            <div class="form-actions">
+                <button type="button" id="btn-cancelar-confirmacion" class="btn btn-cancel">Cancelar</button>
+                <button type="button" id="btn-confirmar-accion" class="btn btn-danger">Confirmar</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal: Tarjeta detallada de participante -->
+    <div id="modal-participante-detalle" class="modal">
+        <div class="modal-content participante-card-detalle">
+            <span class="close-modal">&times;</span>
+            <div id="participante-detalle-contenido">
+                <!-- Contenido generado dinámicamente -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal: Ver notas de WOG -->
+    <div id="modal-notas" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2 id="modal-notas-titulo">Notas del WOG</h2>
+            <div id="modal-notas-contenido" class="notas-contenido"></div>
+            <div class="form-actions">
+                <button type="button" id="btn-cerrar-notas" class="btn">Cerrar</button>
+            </div>
+        </div>
+    </div>
+<!-- Modal: Editar WOG -->
+<div id="modal-edit-wog" class="modal">
+    <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        <h2>Editar WOG</h2>
+        
+        <form id="edit-wog-form">
+            <input type="hidden" id="edit-wog-id">
+            
+            <div class="form-group">
+                <label for="edit-fecha">Fecha</label>
+                <input type="date" id="edit-fecha" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="edit-sede">Sede</label>
+                <select id="edit-sede" required>
+                    <option value="">Seleccionar anfitrión</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="edit-subsede">Subsede</label>
+                <input type="text" id="edit-subsede" placeholder="Ej: Casa, Club, CNSI...">
+            </div>
+            
+            <div class="form-group">
+                <label>Compradores</label>
+                <div id="edit-compradores-container">
+                    <div class="comprador-item">
+                        <select class="comprador-select" required>
+                            <option value="">Seleccionar comprador</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="button" id="edit-add-comprador" class="btn btn-circle">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            
+            <div class="form-group">
+                <label>Asador</label>
+                <div id="edit-asadores-container">
+                    <div class="asador-item">
+                        <select class="asador-select" required>
+                            <option value="">Seleccionar asador</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="button" id="edit-add-asador" class="btn btn-circle">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            
+            <div class="form-group">
+                <label>Asistentes</label>
+                <div id="edit-asistentes-lista" class="checkbox-group"></div>
+            </div>
+            
+            <div class="form-group">
+                <label for="edit-notas">Notas (opcional)</label>
+                <textarea id="edit-notas" placeholder="Temas discutidos, actividades, anécdotas..." rows="4"></textarea>
+            </div>
+            
+            <div class="form-actions">
+                <button type="button" id="btn-cancelar-edit" class="btn btn-cancel">Cancelar</button>
+                <button type="submit" class="btn btn-submit">Guardar Cambios</button>
+            </div>
+        </form>
+    </div>
 </div>
-<script src="js/recalcularPuntos.js"></script>
+    <!-- Notificación Toast -->
+    <div id="toast" class="toast"></div>
+    
+    <!-- Scripts - ORDEN CORREGIDO -->
+    <script src="js/config.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/participantes.js"></script>
+    <script src="js/puntuacion.js"></script>
+    <script src="js/wog.js"></script>
+    <script src="js/ranking.js"></script>
+    <script src="js/historial.js"></script>
+    <script src="js/wog-edit.js"></script>
+    <script src="js/inicializar-asistencia.js"></script>
+    <script src="js/tabs-fix.js"></script>
+    <script src="js/fix.js"></script>
+    <script src="js/recalcularPuntos.js"></script>
+
+<script>
+// Mostrar botón admin solo si el usuario logueado es Diego
+firebase.auth().onAuthStateChanged(user => {
+  if (user && user.email === "diegolongstaff@gmail.com") {
+    document.getElementById('admin-actions').style.display = 'block';
+  }
+});
+</script>
+
+    <!-- Script para inicializar la navegación por pestañas -->
+    <script>
+        // Configuración adicional para la navegación por pestañas
+        document.addEventListener('DOMContentLoaded', function() {
+            // Actualizar los botones de pestañas
+            document.querySelectorAll('.tab-button').forEach(function(button) {
+                button.onclick = function() {
+                    const tabId = this.getAttribute('data-tab');
+                    if (tabId && typeof window.openTab === 'function') {
+                        window.openTab(tabId);
+                        return false;
+                    }
+                };
+            });
+        });
+    </script>
+</body>
+</html>
