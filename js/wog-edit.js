@@ -116,7 +116,8 @@ async function cargarFormularioEditWog(idWog) {
       }
       const wog = doc.data();
       console.log("✏️ Cargando datos para edición:", wog);
-  
+      console.log("ID recibido para editar: |" + idWog + "|");
+
       // Asignar valores solo si los elementos existen
       const participantesLista = document.getElementById("participantes-lista");
       if (participantesLista) {
