@@ -107,7 +107,18 @@ function agregarEditSelectorAsador() {
     // Añadir al contenedor principal
     editAsadoresContainer.appendChild(asadorItem);
 }
-
+function convertirFechaInput(fechaString) {
+    // Si la fecha es tipo timestamp de Firebase
+    if (typeof fechaString === "object" && fechaString.toDate) {
+      const date = fechaString.toDate();
+      return date.toISOString().substr(0, 10);
+    }
+  
+    // Si ya es un string
+    const date = new Date(fechaString);
+    return date.toISOString().substr(0, 10);
+  }
+  
 async function cargarFormularioEditWog(idWog) {
     try {
       const doc = await db.collection('wogs').doc(idWog).get();
