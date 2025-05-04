@@ -7,19 +7,20 @@ document.addEventListener('DOMContentLoaded', inicializarApp);
 function inicializarApp() {
     console.log('Inicializando WOG Score App...');
     
-    // Configurar navegación por pestañas (simplificado)
-    configurarNavegacionSimple();
+    // Configurar navegación por pestañas
+    configurarNavegacion();
     
     // Cargar datos iniciales del dashboard
     cargarDashboard();
     
+    // Iniciar contador hasta el próximo WOG
+    iniciarContadorProximoWog();
+    
     // Inicializar controladores de módulos
-    if (typeof initPuntuacionModule === 'function') initPuntuacionModule();
     if (typeof initParticipantesModule === 'function') initParticipantesModule();
     if (typeof initWogModule === 'function') initWogModule();
     if (typeof initRankingModule === 'function') initRankingModule();
     if (typeof initHistorialModule === 'function') initHistorialModule();
-    if (typeof initWogEditModule === 'function') initWogEditModule();
     
     // Configurar eventos globales
     configurarEventosGlobales();
@@ -27,9 +28,9 @@ function inicializarApp() {
     console.log('Aplicación inicializada correctamente');
 }
 
-// Configuración simplificada de navegación por pestañas
-function configurarNavegacionSimple() {
-    // Simplemente asignar un onclick a cada botón de manera directa
+// Configuración de navegación por pestañas
+function configurarNavegacion() {
+    // Asignar evento onclick a cada botón de pestaña
     document.querySelectorAll('.tab-button').forEach(button => {
         const targetId = button.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
         if (targetId) {
@@ -41,7 +42,7 @@ function configurarNavegacionSimple() {
     });
 }
 
-// Función simplificada para abrir pestañas
+// Función para abrir pestañas
 function openTab(tabId) {
     console.log('Cambiando a pestaña:', tabId);
     
@@ -60,22 +61,19 @@ function openTab(tabId) {
     if (tabElement) {
         tabElement.classList.add('active');
         
-        // Activar el botón correspondiente (de manera simplificada)
+        // Activar el botón correspondiente
         document.querySelectorAll('.tab-button').forEach(button => {
             if (button.getAttribute('onclick')?.includes(tabId)) {
                 button.classList.add('active');
             }
         });
         
-        // Cargar historial específicamente cuando se abre esa pestaña
-        if (tabId === 'tab-historial' && typeof cargarHistorialSimple === 'function') {
-            cargarHistorialSimple();
-        }
-        
-        // Disparar evento cambio de pestaña
-        document.dispatchEvent(new CustomEvent('tabChanged', { detail: { tabId } }));
+        // Disparar evento de cambio de pestaña
+        document.dispatchEvent(new CustomEvent('tabChanged', { 
+            detail: { tabId } 
+        }));
     } else {
-        console.error('No se encontró el tab:', tabId);
+        console.error('No se encontró la pestaña:', tabId);
     }
 }
 
@@ -86,74 +84,185 @@ async function cargarDashboard() {
         const wogsSnapshot = await db.collection(COLECCION_WOGS).get();
         
         // Añadir enlace al historial
-        const totalWogs = document.getElementById('total-wogs');
-        if (totalWogs) {
-            totalWogs.innerHTML = `
-                <a href="#" onclick="openTab('tab-historial'); return false;" class="dashboard-link">
-                    ${wogsSnapshot.size}
+        document.getElementById('total-wogs').innerHTML = `
+            <a href="#" onclick="openTab('tab-ranking'); return false;" class="dashboard-link">
+                    ${lider.nombre} <span class="small">(${lider.puntos.toFixed(1)} pts)</span>
                 </a>
+            `;
+            document.getElementById('current-leader').innerHTML = liderHTML;
+        }
+    } catch (error) {
+        console.error('Error al calcular líder del ranking:', error);
+        document.getElementById('current-leader').textContent = 'Error al cargar';
+    }
+}
+
+// Cargar información del último WOG
+async function cargarUltimoWog() {
+    try {
+        const lastWogContainer = document.getElementById('last-wog-details');
+        
+        // Mostrar loader
+        lastWogContainer.innerHTML = `
+            <div class="loader">
+                <div class="loader-circle"></div>
+            </div>
+        `;
+        
+        // Obtener el WOG más reciente
+        const wogsSnapshot = await db.collection(COLECCION_WOGS)
+            .orderBy('fecha', 'desc')
+            .limit(1)
+            .get();
+        
+        if (wogsSnapshot.empty) {
+            // No hay WOGs todavía
+            lastWogContainer.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-calendar-alt"></i>
+                    <p>No hay WOGs registrados todavía</p>
+                </div>
+            `;
+            return;
+        }
+        
+        // Obtener datos del último WOG
+        const lastWogDoc = wogsSnapshot.docs[0];
+        const lastWog = lastWogDoc.data();
+        const fecha = lastWog.fecha?.toDate ? lastWog.fecha.toDate() : new Date();
+        
+        // Obtener nombres de participantes
+        const participantesIds = [
+            ...(lastWog.asistentes || []),
+            lastWog.sede,
+            ...(lastWog.asadores || [])
+        ].filter((id, index, self) => id && self.indexOf(id) === index); // Remover duplicados y nulls
+        
+        const participantesMap = {};
+        
+        // Obtener datos de participantes mencionados
+        if (participantesIds.length > 0) {
+            const participantesSnapshot = await db.collection(COLECCION_PARTICIPANTES)
+                .where(firebase.firestore.FieldPath.documentId(), 'in', participantesIds)
+                .get();
+                
+            participantesSnapshot.docs.forEach(doc => {
+                participantesMap[doc.id] = doc.data();
+            });
+        }
+        
+        // Preparar HTML con detalles del último WOG
+        let html = `
+            <div class="last-wog-grid">
+                <div class="last-wog-detail">
+                    <div class="historial-label">Fecha</div>
+                    <div class="historial-value">${formatearFecha(fecha)}</div>
+                </div>
+                
+                <div class="last-wog-detail">
+                    <div class="historial-label">Sede</div>
+                    <div class="historial-value">
+                        ${lastWog.sede && participantesMap[lastWog.sede] 
+                            ? participantesMap[lastWog.sede].nombre 
+                            : 'No especificado'}
+                        ${lastWog.subsede ? ` (${lastWog.subsede})` : ''}
+                    </div>
+                </div>
+        `;
+        
+        // Mostrar asadores si hay
+        if (lastWog.asadores && lastWog.asadores.length > 0) {
+            const asadoresNombres = lastWog.asadores
+                .map(id => participantesMap[id] ? participantesMap[id].nombre : 'Desconocido')
+                .join(', ');
+                
+            html += `
+                <div class="last-wog-detail">
+                    <div class="historial-label">Asador${lastWog.asadores.length > 1 ? 'es' : ''}</div>
+                    <div class="historial-value">${asadoresNombres}</div>
+                </div>
             `;
         }
         
-        // Obtener conteo de participantes
-        const participantesSnapshot = await db.collection(COLECCION_PARTICIPANTES).get();
-        const totalParticipantesElem = document.getElementById('total-participantes');
-        if (totalParticipantesElem) {
-            totalParticipantesElem.textContent = participantesSnapshot.size;
+        // Cerrar div de la grid
+        html += `</div>`;
+        
+        // Mostrar imagen si hay
+        if (lastWog.imagen_url) {
+            html += `
+                <img src="${lastWog.imagen_url}" alt="Imagen del último WOG" class="last-wog-image">
+            `;
         }
         
-        // Calcular líder (participante con más puntos)
-        if (participantesSnapshot.size > 0) {
-            let lider = null;
-            let maxPuntos = -1;
-            
-            for (const doc of participantesSnapshot.docs) {
-                const participante = doc.data();
-                // Sumar puntos (sede + asador + compras + asistencia)
-                const puntos = (participante.puntos_sede || 0) + 
-                               (participante.puntos_asador || 0) + 
-                               (participante.puntos_compras || 0) +
-                               (participante.puntos_asistencia || 0);
-                
-                if (puntos > maxPuntos) {
-                    maxPuntos = puntos;
-                    lider = participante.nombre;
-                }
-            }
-            
-            if (lider) {
-                const leaderElem = document.getElementById('current-leader');
-                if (leaderElem) {
-                    leaderElem.innerHTML = `
-                        <a href="#" onclick="openTab('tab-ranking'); return false;" class="dashboard-link">
-                            ${lider}
-                        </a>
-                    `;
-                }
-            }
-        }
+        // Botón para ver detalles en el historial
+        html += `
+            <div style="text-align: center; margin-top: 15px;">
+                <button onclick="openTab('tab-historial'); return false;" class="btn btn-add">
+                    <i class="fas fa-history"></i> Ver historial completo
+                </button>
+            </div>
+        `;
         
-        // Calcular fecha del próximo WOG (siguiente martes)
-        const hoy = new Date();
-        const diaSemana = hoy.getDay(); // 0 es domingo, 1 es lunes, 2 es martes, etc.
-        const diasHastaMartes = (diaSemana <= 2) ? (2 - diaSemana) : (9 - diaSemana);
-        
-        const proximoMartes = new Date(hoy);
-        proximoMartes.setDate(hoy.getDate() + diasHastaMartes);
-        
-        // Formatear fecha
-        const opciones = { weekday: 'long', day: 'numeric', month: 'long' };
-        const fechaFormateada = proximoMartes.toLocaleDateString('es-ES', opciones);
-        
-        const nextWogElem = document.getElementById('next-wog');
-        if (nextWogElem) {
-            nextWogElem.textContent = fechaFormateada;
-        }
+        // Actualizar contenedor
+        lastWogContainer.innerHTML = html;
         
     } catch (error) {
-        console.error('Error al cargar datos del dashboard:', error);
-        mostrarToast('Error al cargar datos iniciales');
+        console.error('Error al cargar último WOG:', error);
+        document.getElementById('last-wog-details').innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>Error al cargar el último WOG</p>
+            </div>
+        `;
     }
+}
+
+// Iniciar contador hasta el próximo WOG
+function iniciarContadorProximoWog() {
+    // Calcular fecha del próximo martes
+    const hoy = new Date();
+    const diaSemana = hoy.getDay(); // 0 = domingo, 1 = lunes, 2 = martes, etc.
+    
+    // Calcular días hasta el próximo martes (2)
+    const diasHastaMartes = diaSemana <= 2 ? 2 - diaSemana : 9 - diaSemana;
+    
+    // Crear fecha del próximo martes a las 20:00 (hora local)
+    const proximoMartes = new Date(hoy);
+    proximoMartes.setDate(hoy.getDate() + diasHastaMartes);
+    proximoMartes.setHours(20, 0, 0, 0);
+    
+    // Mostrar fecha del próximo WOG
+    const opcionesFecha = { weekday: 'long', day: 'numeric', month: 'long' };
+    document.getElementById('next-wog').textContent = proximoMartes.toLocaleDateString('es-ES', opcionesFecha);
+    
+    // Función para actualizar el contador
+    function actualizarContador() {
+        const ahora = new Date();
+        const diferencia = proximoMartes - ahora;
+        
+        // Si ya pasó la fecha, calcular para el próximo martes
+        if (diferencia < 0) {
+            proximoMartes.setDate(proximoMartes.getDate() + 7);
+            actualizarContador();
+            return;
+        }
+        
+        // Calcular días, horas, minutos y segundos
+        const dias = Math.floor(diferencia / (1000 * 60 * 60 * 24));
+        const horas = Math.floor((diferencia % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutos = Math.floor((diferencia % (1000 * 60 * 60)) / (1000 * 60));
+        const segundos = Math.floor((diferencia % (1000 * 60)) / 1000);
+        
+        // Actualizar elementos del DOM
+        document.getElementById('countdown-days').textContent = dias;
+        document.getElementById('countdown-hours').textContent = horas;
+        document.getElementById('countdown-minutes').textContent = minutos;
+        document.getElementById('countdown-seconds').textContent = segundos;
+    }
+    
+    // Actualizar inmediatamente y luego cada segundo
+    actualizarContador();
+    setInterval(actualizarContador, 1000);
 }
 
 // Configurar eventos globales
@@ -181,10 +290,15 @@ function configurarEventosGlobales() {
     const btnCerrarNotas = document.getElementById('btn-cerrar-notas');
     if (btnCerrarNotas) {
         btnCerrarNotas.addEventListener('click', () => {
-            const modalNotas = document.getElementById('modal-notas');
-            if (modalNotas) {
-                modalNotas.style.display = 'none';
-            }
+            document.getElementById('modal-notas').style.display = 'none';
+        });
+    }
+    
+    // Botón cancelar edición de WOG
+    const btnCancelarEditarWog = document.getElementById('btn-cancelar-editar-wog');
+    if (btnCancelarEditarWog) {
+        btnCancelarEditarWog.addEventListener('click', () => {
+            document.getElementById('modal-editar-wog').style.display = 'none';
         });
     }
     
@@ -196,8 +310,6 @@ function configurarEventosGlobales() {
 // Mostrar un mensaje toast
 function mostrarToast(mensaje, esError = false) {
     const toast = document.getElementById('toast');
-    if (!toast) return;
-    
     toast.textContent = mensaje;
     toast.className = esError ? 'toast show error' : 'toast show';
     
@@ -293,146 +405,73 @@ async function comprimirImagen(file, maxWidth = 800, quality = 0.7) {
     });
 }
 
-// Mostrar notas de un WOG
-async function mostrarNotasWogDirecto(wogId) {
-    try {
-        const modalNotas = document.getElementById('modal-notas');
-        const modalNotasTitulo = document.getElementById('modal-notas-titulo');
-        const modalNotasContenido = document.getElementById('modal-notas-contenido');
-        
-        if (!modalNotas || !modalNotasTitulo || !modalNotasContenido) {
-            console.error('Elementos del modal de notas no encontrados');
-            return;
-        }
-        
-        // Obtener los datos del WOG
-        const doc = await db.collection('wogs').doc(wogId).get();
-        
-        if (!doc.exists) {
-            mostrarToast('No se encontró el WOG', true);
-            return;
-        }
-        
-        const wog = doc.data();
-        const fecha = wog.fecha?.toDate ? wog.fecha.toDate() : new Date();
-        
-        // Configurar el modal
-        modalNotasTitulo.textContent = `Notas del WOG - ${formatearFecha(fecha)}`;
-        
-        // Mostrar contenido o placeholder
-        if (wog.notas && wog.notas.trim()) {
-            modalNotasContenido.textContent = wog.notas;
-        } else {
-            modalNotasContenido.innerHTML = '<div class="notas-placeholder">No hay notas registradas para este WOG.</div>';
-        }
-        
-        // Mostrar modal
-        modalNotas.style.display = 'block';
-        
-    } catch (error) {
-        console.error('Error al cargar notas:', error);
-        mostrarToast('Error al cargar notas del WOG', true);
-    }
-}
-
-// Confirmar eliminación de un WOG
-function confirmarEliminarWogDirecto(id) {
-    const modalConfirmacion = document.getElementById('modal-confirmacion');
-    const modalConfirmacionTitulo = document.getElementById('modal-confirmacion-titulo');
-    const modalConfirmacionMensaje = document.getElementById('modal-confirmacion-mensaje');
-    const btnConfirmarAccion = document.getElementById('btn-confirmar-accion');
-    
-    if (!modalConfirmacion || !modalConfirmacionTitulo || !modalConfirmacionMensaje || !btnConfirmarAccion) {
-        console.error('Elementos del modal de confirmación no encontrados');
-        return;
-    }
-    
-    // Configurar modal de confirmación
-    modalConfirmacionTitulo.textContent = 'Eliminar WOG';
-    modalConfirmacionMensaje.innerHTML = `
-        <p>¿Estás seguro de que deseas eliminar este WOG?</p>
-        <p>Esta acción no se puede deshacer y ajustará los puntos de los participantes.</p>
-    `;
-    
-    // Configurar botón de confirmación
-    btnConfirmarAccion.textContent = 'Eliminar';
-    btnConfirmarAccion.className = 'btn btn-danger';
-    btnConfirmarAccion.onclick = () => eliminarWogDirecto(id);
-    
-    // Mostrar modal
-    modalConfirmacion.style.display = 'block';
-}
-
-// Eliminar un WOG directamente
-async function eliminarWogDirecto(wogId) {
-    const modalConfirmacion = document.getElementById('modal-confirmacion');
-    const btnConfirmarAccion = document.getElementById('btn-confirmar-accion');
-    
-    if (!modalConfirmacion || !btnConfirmarAccion) {
-        console.error('Elementos del modal de confirmación no encontrados');
-        return;
-    }
-    
-    try {
-        // Cambiar botón a estado de carga
-        btnConfirmarAccion.disabled = true;
-        btnConfirmarAccion.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Eliminando...';
-        
-        // Obtener datos del WOG para restar puntos
-        const docRef = db.collection('wogs').doc(wogId);
-        const doc = await docRef.get();
-        
-        if (!doc.exists) {
-            throw new Error('No se encontró el WOG');
-        }
-        
-        const wog = doc.data();
-        
-        // Usar el módulo de puntuación para restar puntos
-        if (typeof window.restarPuntuaciones === 'function') {
-            await window.restarPuntuaciones(wog);
-            await docRef.delete();
-        } else {
-            // Método alternativo si no existe restarPuntuaciones
-            await db.runTransaction(async transaction => {
-                // Eliminar el documento del WOG
-                transaction.delete(docRef);
-            });
-        }
-        
-        // Cerrar modal
-        modalConfirmacion.style.display = 'none';
-        
-        // Mostrar mensaje
-        mostrarToast('WOG eliminado correctamente');
-        
-        // Actualizar historial si la función existe
-        if (typeof cargarHistorialSimple === 'function') {
-            cargarHistorialSimple();
-        }
-        
-        // Disparar evento para actualizar otros módulos
-        document.dispatchEvent(new CustomEvent('wogActualizado'));
-        
-    } catch (error) {
-        console.error('Error al eliminar WOG:', error);
-        mostrarToast('Error al eliminar WOG: ' + error.message, true);
-    } finally {
-        // Restaurar botón
-        if (btnConfirmarAccion) {
-            btnConfirmarAccion.disabled = false;
-            btnConfirmarAccion.innerHTML = 'Eliminar';
-        }
-    }
-}
-
-// Exportar funciones al ámbito global
+// Exportar funciones globales
 window.openTab = openTab;
 window.mostrarToast = mostrarToast;
 window.formatearFecha = formatearFecha;
 window.formatearFechaInput = formatearFechaInput;
 window.obtenerIniciales = obtenerIniciales;
-window.comprimirImagen = comprimirImagen;
-window.mostrarNotasWogDirecto = mostrarNotasWogDirecto;
-window.confirmarEliminarWogDirecto = confirmarEliminarWogDirecto;
-window.eliminarWogDirecto = eliminarWogDirecto;
+window.comprimirImagen = comprimirImagen;('tab-historial'); return false;" class="dashboard-link">
+                ${wogsSnapshot.size}
+            </a>
+        `;
+        
+        // Obtener conteo de participantes
+        const participantesSnapshot = await db.collection(COLECCION_PARTICIPANTES)
+            .where('activo', '==', true)
+            .get();
+            
+        document.getElementById('total-participantes').innerHTML = `
+            <a href="#" onclick="openTab('tab-participantes'); return false;" class="dashboard-link">
+                ${participantesSnapshot.size}
+            </a>
+        `;
+        
+        // Calcular líder (participante con más puntos)
+        if (participantesSnapshot.size > 0) {
+            await calcularLiderRanking();
+        }
+        
+        // Cargar información del último WOG
+        await cargarUltimoWog();
+        
+    } catch (error) {
+        console.error('Error al cargar datos del dashboard:', error);
+        mostrarToast('Error al cargar datos iniciales', true);
+    }
+}
+
+// Calcular y mostrar el líder del ranking
+async function calcularLiderRanking() {
+    try {
+        const participantesSnapshot = await db.collection(COLECCION_PARTICIPANTES)
+            .where('activo', '==', true)
+            .get();
+            
+        let lider = null;
+        let maxPuntos = -1;
+        
+        for (const doc of participantesSnapshot.docs) {
+            const participante = doc.data();
+            
+            // Calcular puntos totales
+            const puntosSede = participante.puntos_sede || 0;
+            const puntosAsador = participante.puntos_asador || 0;
+            const puntosCompras = participante.puntos_compras || 0;
+            const puntosAsistencia = participante.puntos_asistencia || 0;
+            
+            const puntosTotales = puntosSede + puntosAsador + puntosCompras + puntosAsistencia;
+            
+            if (puntosTotales > maxPuntos) {
+                maxPuntos = puntosTotales;
+                lider = {
+                    nombre: participante.nombre,
+                    puntos: puntosTotales,
+                    imagen_url: participante.imagen_url || null
+                };
+            }
+        }
+        
+        if (lider) {
+            const liderHTML = `
+                <a href="#" onclick="openTab

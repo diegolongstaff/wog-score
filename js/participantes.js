@@ -107,9 +107,6 @@ async function guardarParticipante(event) {
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
     
-    // Variable para controlar si hay imagen
-    let hayImagen = inputParticipanteImagen.files.length > 0;
-    
     try {
         const nombre = inputParticipanteNombre.value.trim();
         const apodo = inputParticipanteApodo.value.trim() || nombre;
@@ -130,12 +127,13 @@ async function guardarParticipante(event) {
             fecha_actualizacion: firebase.firestore.FieldValue.serverTimestamp()
         };
         
-        // Si es un nuevo participante, agregar fecha de creación
+        // Si es un nuevo participante, agregar fecha de creación e inicializar puntos
         if (!id) {
             participanteData.fecha_creacion = firebase.firestore.FieldValue.serverTimestamp();
             participanteData.puntos_sede = 0;
             participanteData.puntos_asador = 0;
             participanteData.puntos_compras = 0;
+            participanteData.puntos_asistencia = 0;
         }
         
         // Manejar imagen si se seleccionó
@@ -156,61 +154,37 @@ async function guardarParticipante(event) {
                     }
                 }
                 
-                // Opción 1: Subir a Firebase Storage
-                try {
-                    // Generar nombre único para el archivo
-                    const extension = file.name.split('.').pop();
-                    const nombreArchivo = id || `participante_${Date.now()}`;
-                    const rutaArchivo = `participantes/${nombreArchivo}.${extension}`;
-                    
-                    // Crear referencia al archivo
-                    const fileRef = storage.ref(rutaArchivo);
-                    
-                    // Subir archivo con control de progreso
-                    const uploadTask = fileRef.put(fileToUpload);
-                    
-                    // Monitor de progreso
-                    uploadTask.on('state_changed',
-                        // Progreso
-                        (snapshot) => {
-                            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                            console.log('Progreso de subida: ' + progress.toFixed(0) + '%');
-                        },
-                        // Error
-                        (error) => {
-                            console.error('Error al subir imagen a Storage:', error);
-                            throw error;
-                        }
-                    );
-                    
-                    // Esperar a que se complete la subida
-                    await uploadTask;
-                    
-                    // Obtener URL de descarga
-                    const downloadURL = await fileRef.getDownloadURL();
-                    participanteData.imagen_url = downloadURL;
-                    
-                } catch (storageError) {
-                    console.error('Error en Firebase Storage:', storageError);
-                    
-                    // Si falla Storage, usamos Base64 como respaldo
-                    try {
-                        // Leer archivo como base64
-                        const base64Image = await new Promise((resolve, reject) => {
-                            const reader = new FileReader();
-                            reader.onload = () => resolve(reader.result);
-                            reader.onerror = () => reject(new Error('Error al leer archivo'));
-                            reader.readAsDataURL(fileToUpload);
-                        });
-                        
-                        // Guardar la imagen como base64 directamente
-                        participanteData.imagen_url = base64Image;
-                        
-                    } catch (base64Error) {
-                        console.error('Error al procesar imagen como base64:', base64Error);
-                        mostrarToast('Error al procesar la imagen', true);
+                // Generar nombre único para el archivo
+                const extension = file.name.split('.').pop();
+                const nombreArchivo = id || `participante_${Date.now()}`;
+                const rutaArchivo = `participantes/${nombreArchivo}.${extension}`;
+                
+                // Crear referencia al archivo
+                const fileRef = storage.ref(rutaArchivo);
+                
+                // Subir archivo con control de progreso
+                const uploadTask = fileRef.put(fileToUpload);
+                
+                // Monitor de progreso
+                uploadTask.on('state_changed',
+                    // Progreso
+                    (snapshot) => {
+                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                        console.log('Progreso de subida: ' + progress.toFixed(0) + '%');
+                    },
+                    // Error
+                    (error) => {
+                        console.error('Error al subir imagen a Storage:', error);
+                        throw error;
                     }
-                }
+                );
+                
+                // Esperar a que se complete la subida
+                await uploadTask;
+                
+                // Obtener URL de descarga
+                const downloadURL = await fileRef.getDownloadURL();
+                participanteData.imagen_url = downloadURL;
                 
             } catch (imgError) {
                 console.error('Error procesando imagen:', imgError);
@@ -238,7 +212,7 @@ async function guardarParticipante(event) {
         
     } catch (error) {
         console.error('Error al guardar participante:', error);
-        mostrarToast('Error al guardar participante', true);
+        mostrarToast('Error al guardar participante: ' + error.message, true);
     } finally {
         // Restaurar botón
         submitBtn.disabled = false;
@@ -257,7 +231,9 @@ async function cargarParticipantes() {
         `;
         
         // Obtener participantes de Firestore
-        const snapshot = await db.collection(COLECCION_PARTICIPANTES).get();
+        const snapshot = await db.collection(COLECCION_PARTICIPANTES)
+            .orderBy('nombre')
+            .get();
         
         // Verificar si hay participantes
         if (snapshot.empty) {
@@ -270,29 +246,26 @@ async function cargarParticipantes() {
             return;
         }
         
-        // Preparar array de participantes
-        const participantes = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        }));
-        
-        // Ordenar por nombre
-        participantes.sort((a, b) => a.nombre.localeCompare(b.nombre));
-        
         // Limpiar contenedor
         participantesContainer.innerHTML = '';
         
         // Crear tarjeta para cada participante
-        participantes.forEach(participante => {
-            const card = document.createElement('div');
-            card.className = 'participante-card';
+        snapshot.forEach(doc => {
+            const participante = {
+                id: doc.id,
+                ...doc.data()
+            };
             
             // Calcular puntos totales
-            const puntosTotales = (participante.puntos_sede || 0) + 
-                                  (participante.puntos_asador || 0) + 
-                                  (participante.puntos_compras || 0);
+            const puntosSede = participante.puntos_sede || 0;
+            const puntosAsador = participante.puntos_asador || 0;
+            const puntosCompras = participante.puntos_compras || 0;
+            const puntosAsistencia = participante.puntos_asistencia || 0;
             
-            // HTML de la tarjeta
+            const puntosTotales = puntosSede + puntosAsador + puntosCompras + puntosAsistencia;
+            
+            const card = document.createElement('div');
+            card.className = 'participante-card';
             card.innerHTML = `
                 <div class="participante-imagen">
                     ${participante.imagen_url 
@@ -309,11 +282,11 @@ async function cargarParticipantes() {
                             <div class="participante-etiqueta">Puntos</div>
                         </div>
                         <div class="participante-stat">
-                            <div class="participante-valor">${(participante.puntos_sede || 0).toFixed(0)}</div>
+                            <div class="participante-valor">${puntosSede.toFixed(1)}</div>
                             <div class="participante-etiqueta">Sede</div>
                         </div>
                         <div class="participante-stat">
-                            <div class="participante-valor">${(participante.puntos_asador || 0).toFixed(1)}</div>
+                            <div class="participante-valor">${puntosAsador.toFixed(1)}</div>
                             <div class="participante-etiqueta">Asador</div>
                         </div>
                     </div>
@@ -337,7 +310,7 @@ async function cargarParticipantes() {
         participantesContainer.innerHTML = `
             <div class="empty-state">
                 <i class="fas fa-exclamation-triangle"></i>
-                <p>Error al cargar participantes</p>
+                <p>Error al cargar participantes: ${error.message}</p>
             </div>
         `;
     }
@@ -403,28 +376,24 @@ async function confirmarEliminarParticipante(id) {
         // Verificar si está asociado a WOGs
         const wogsComoSede = await db.collection(COLECCION_WOGS).where('sede', '==', id).limit(1).get();
         const wogsComoAsador = await db.collection(COLECCION_WOGS).where('asadores', 'array-contains', id).limit(1).get();
-        const wogsComoCompras = await db.collection(COLECCION_WOGS).where('compras', '==', id).limit(1).get();
-        const wogsComoAsistente = await db.collection(COLECCION_WOGS).where('asistentes', 'array-contains', id).limit(1).get();
+        const wogsQuery1 = await db.collection(COLECCION_WOGS).where('asistentes', 'array-contains', id).limit(1).get();
         
         // Configurar modal de confirmación
         modalConfirmacionTitulo.textContent = 'Eliminar Participante';
         
-        if (!wogsComoSede.empty || !wogsComoAsador.empty || !wogsComoCompras.empty || !wogsComoAsistente.empty) {
+        if (!wogsComoSede.empty || !wogsComoAsador.empty || !wogsQuery1.empty) {
             // No se puede eliminar porque está asociado a WOGs
             modalConfirmacionMensaje.innerHTML = `
                 <p><strong>${participante.nombre}</strong> no puede ser eliminado porque está asociado a uno o más WOGs.</p>
-                <p>Considera editar su información en lugar de eliminarlo.</p>
+                <p>Considera desactivar al participante en lugar de eliminarlo.</p>
             `;
             
             // Cambiar botón de confirmación
             btnConfirmarAccion.textContent = 'Entendido';
-            btnConfirmarAccion.className = 'btn btn-primary';
+            btnConfirmarAccion.className = 'btn';
             btnConfirmarAccion.onclick = () => {
                 modalConfirmacion.style.display = 'none';
             };
-            
-            // Ocultar botón de cancelar
-            btnCancelarConfirmacion.style.display = 'none';
         } else {
             // Se puede eliminar
             modalConfirmacionMensaje.innerHTML = `
@@ -436,76 +405,10 @@ async function confirmarEliminarParticipante(id) {
             btnConfirmarAccion.textContent = 'Eliminar';
             btnConfirmarAccion.className = 'btn btn-danger';
             btnConfirmarAccion.onclick = eliminarParticipante;
-            
-            // Mostrar botón de cancelar
-            btnCancelarConfirmacion.style.display = 'inline-block';
         }
         
         // Mostrar modal
         modalConfirmacion.style.display = 'block';
         
     } catch (error) {
-        console.error('Error al preparar eliminación de participante:', error);
-        mostrarToast('Error al verificar participante', true);
-    }
-}
-
-// Eliminar un participante
-async function eliminarParticipante() {
-    if (!participanteAEliminar) return;
-    
-    try {
-        // Cambiar el botón a estado de carga
-        btnConfirmarAccion.disabled = true;
-        btnConfirmarAccion.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Eliminando...';
-        
-        // Obtener referencia al documento
-        const docRef = db.collection(COLECCION_PARTICIPANTES).doc(participanteAEliminar);
-        
-        // Obtener documento para conseguir URL de la imagen
-        const doc = await docRef.get();
-        const participante = doc.data();
-        
-        // Eliminar imagen de Storage si existe
-        if (participante && participante.imagen_url && participante.imagen_url.startsWith('https://firebasestorage.googleapis.com')) {
-            try {
-                const imageRef = storage.refFromURL(participante.imagen_url);
-                await imageRef.delete();
-            } catch (imgError) {
-                console.error('Error al eliminar imagen:', imgError);
-                // Continuar con la eliminación del participante incluso si falla la eliminación de la imagen
-            }
-        }
-        
-        // Eliminar documento
-        await docRef.delete();
-        
-        // Cerrar modal
-        modalConfirmacion.style.display = 'none';
-        
-        // Mostrar mensaje
-        mostrarToast('Participante eliminado correctamente');
-        
-        // Recargar lista
-        cargarParticipantes();
-        
-        // Disparar evento para actualizar otros módulos
-        document.dispatchEvent(new CustomEvent('participantesActualizados'));
-        
-    } catch (error) {
-        console.error('Error al eliminar participante:', error);
-        mostrarToast('Error al eliminar participante', true);
-    } finally {
-        // Restaurar botón
-        btnConfirmarAccion.disabled = false;
-        btnConfirmarAccion.innerHTML = 'Eliminar';
-        
-        // Limpiar variable
-        participanteAEliminar = null;
-    }
-}
-
-// Exportar funciones necesarias al alcance global
-window.initParticipantesModule = initParticipantesModule;
-window.editarParticipante = editarParticipante;
-window.confirmarEliminarParticipante = confirmarEliminarParticipante;
+        console.error('Error al prepar
